@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MarisolliFlix · Películas</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <a class="logo" href="../index.html">MarisolliFlix</a>
+    <nav class="nav">
+      <a href="../index.html">Inicio</a>
+      <a href="listado.html">Películas</a>
+    </nav>
+  </header>
+  <main>
+    <section class="section">
+      <h1>Películas</h1>
+      <div class="toolbar">
+        <label>Categoría
+          <select id="filtro-categoria"><option value="">Todas</option></select>
+        </label>
+        <label>Ordenar por
+          <select id="orden">
+            <option value="ranking">Ranking</option>
+            <option value="popularidad">Popularidad</option>
+            <option value="titulo">Título (A-Z)</option>
+            <option value="anio">Año</option>
+            <option value="reciente">Más recientes</option>
+          </select>
+        </label>
+      </div>
+      <div id="grid" class="grid" aria-live="polite"></div>
+      <nav id="paginacion" class="paginacion" aria-label="Paginación"></nav>
+    </section>
+  </main>
+  <script type="module" src="../js/main.js"></script>
+  <script type="module" src="../js/pages/listado.js"></script>
+</body>
+</html>
