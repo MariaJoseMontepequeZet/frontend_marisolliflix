@@ -20,18 +20,20 @@ async function init() {
   mostrarCarga(top, CONFIG.TOP_RANKING);
   mostrarCarga(populares, 6);
   try {
-    const peliculas = await getPeliculas();
-    if (!peliculas.length) {
+    // El backend ya ordena: no hace falta traer todo el catálogo
+    const [ranking, masPopulares] = await Promise.all([
+      getPeliculas({ sort: 'ranking', limit: CONFIG.TOP_RANKING }),
+      getPeliculas({ sort: 'popularidad', limit: CONFIG.POPULARES }),
+    ]);
+    if (!ranking.peliculas.length) {
       mostrarVacio(top);
       mostrarVacio(populares);
       return;
     }
-    const porRanking = [...peliculas].sort((a, b) => b.ranking - a.ranking || b.resenas - a.resenas);
-    const porPopularidad = [...peliculas].sort((a, b) => b.resenas - a.resenas || b.ranking - a.ranking);
 
-    renderHero(porRanking[0]);
-    top.innerHTML = porRanking.slice(0, CONFIG.TOP_RANKING).map(renderCard).join('');
-    populares.innerHTML = porPopularidad.slice(0, CONFIG.POPULARES).map(renderCard).join('');
+    renderHero(ranking.peliculas[0]);
+    top.innerHTML = ranking.peliculas.map(renderCard).join('');
+    populares.innerHTML = masPopulares.peliculas.map(renderCard).join('');
     top.removeAttribute('aria-busy');
     populares.removeAttribute('aria-busy');
   } catch (e) {

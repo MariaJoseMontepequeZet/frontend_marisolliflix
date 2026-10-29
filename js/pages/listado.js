@@ -1,68 +1,66 @@
 import { getPeliculas, getCategorias } from '../api/client.js';
-import { CONFIG } from '../utils/config.js';
 import { escapeHTML, renderCard, mostrarCarga, mostrarVacio, mostrarError } from '../utils/ui.js';
+import { CONFIG } from '../utils/config.js';
 
 const grid = document.getElementById('grid');
 const filtro = document.getElementById('filtro-categoria');
 const orden = document.getElementById('orden');
 const paginacion = document.getElementById('paginacion');
 
-const ORDENES = {
-  ranking: (a, b) => b.ranking - a.ranking || b.resenas - a.resenas,
-  popularidad: (a, b) => b.resenas - a.resenas || b.ranking - a.ranking,
-  titulo: (a, b) => a.titulo.localeCompare(b.titulo, 'es'),
-  anio: (a, b) => b.anio - a.anio,
-  reciente: (a, b) => new Date(b.creada) - new Date(a.creada),
-};
-
-let peliculas = [];
 let pagina = 1;
+let peticion = 0; // evita que una respuesta lenta pise a una más reciente
 
-function render() {
-  const lista = peliculas
-    .filter((p) => !filtro.value || p.categoriaId === Number(filtro.value))
-    .sort(ORDENES[orden.value]);
+function renderPaginacion({ page, pages }) {
+  paginacion.innerHTML = pages <= 1 ? '' : `
+    <button class="btn" data-dir="-1" ${page === 1 ? 'disabled' : ''}>Anterior</button>
+    <span>Página ${page} de ${pages}</span>
+    <button class="btn" data-dir="1" ${page === pages ? 'disabled' : ''}>Siguiente</button>`;
+}
 
-  const totalPaginas = Math.max(1, Math.ceil(lista.length / CONFIG.PAGE_SIZE));
-  pagina = Math.min(pagina, totalPaginas);
+// Pide al backend la página actual con el filtro y el orden elegidos
+async function cargar() {
+  const actual = ++peticion;
+  mostrarCarga(grid, CONFIG.PAGE_SIZE);
+  paginacion.innerHTML = '';
+  try {
+    const { peliculas, paginacion: pag } = await getPeliculas({
+      sort: orden.value,
+      page: pagina,
+      categoriaId: filtro.value || undefined,
+    });
+    if (actual !== peticion) return;
 
-  if (!lista.length) {
-    mostrarVacio(grid);
-    paginacion.innerHTML = '';
-    return;
+    if (!peliculas.length) {
+      mostrarVacio(grid);
+      return;
+    }
+    grid.innerHTML = peliculas.map(renderCard).join('');
+    grid.removeAttribute('aria-busy');
+    renderPaginacion(pag);
+  } catch (e) {
+    if (actual === peticion) mostrarError(grid, e.message);
   }
-
-  const inicio = (pagina - 1) * CONFIG.PAGE_SIZE;
-  grid.innerHTML = lista.slice(inicio, inicio + CONFIG.PAGE_SIZE).map(renderCard).join('');
-  grid.removeAttribute('aria-busy');
-
-  paginacion.innerHTML = `
-    <button class="btn" data-dir="-1" ${pagina === 1 ? 'disabled' : ''}>Anterior</button>
-    <span>Página ${pagina} de ${totalPaginas}</span>
-    <button class="btn" data-dir="1" ${pagina === totalPaginas ? 'disabled' : ''}>Siguiente</button>`;
 }
 
 async function init() {
-  mostrarCarga(grid, CONFIG.PAGE_SIZE);
   try {
-    const [lista, categorias] = await Promise.all([getPeliculas(), getCategorias()]);
-    peliculas = lista;
+    const categorias = await getCategorias();
     filtro.innerHTML =
       '<option value="">Todas</option>' +
       categorias.map((c) => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
-    render();
   } catch (e) {
-    mostrarError(grid, e.message);
+    // Sin categorías el listado igual funciona, solo sin filtro
   }
+  cargar();
 }
 
-filtro.addEventListener('change', () => { pagina = 1; render(); });
-orden.addEventListener('change', () => { pagina = 1; render(); });
+filtro.addEventListener('change', () => { pagina = 1; cargar(); });
+orden.addEventListener('change', () => { pagina = 1; cargar(); });
 paginacion.addEventListener('click', (e) => {
   const dir = e.target.dataset.dir;
   if (!dir) return;
   pagina += Number(dir);
-  render();
+  cargar();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
