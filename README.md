@@ -5,8 +5,11 @@ Frontend en HTML, CSS y JavaScript (módulos ES).
 ## Estructura
 - `index.html` — Inicio (hero, Top 5 por ranking, más populares)
 - `pages/listado.html` — Listado con filtro por categoría, orden y paginación
+- `pages/login.html` — Entrar y crear cuenta
+- `pages/proponer.html` — Formulario para proponer una película (usuarios con sesión)
+- `pages/admin.html` — Panel de administración con pestañas Categorías, Películas y Pendientes (solo admin)
 - `js/api/client.js` — cliente de la API
-- `js/utils/` — configuración y helpers de UI
+- `js/utils/` — configuración, sesión (`auth.js`), modales y avisos (`modal.js`), formulario de película y helpers de UI
 - `css/styles.css` — estilos base
 
 ## Ejecutar
