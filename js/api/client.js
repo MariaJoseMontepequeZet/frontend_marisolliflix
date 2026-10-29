@@ -18,20 +18,35 @@ async function request(path) {
   return res.json();
 }
 
-export async function getCategorias() {
-  const { data } = await request('/categories');
-  return data;
+// Las categorías casi no cambian: se piden una sola vez por página.
+let categoriasPendientes = null;
+
+export function getCategorias() {
+  if (!categoriasPendientes) {
+    categoriasPendientes = request('/categories')
+      .then(({ data }) => data)
+      .catch((e) => {
+        categoriasPendientes = null; // permite reintentar si falló
+        throw e;
+      });
+  }
+  return categoriasPendientes;
 }
 
-// Devuelve las películas aprobadas con el nombre de su categoría ya resuelto.
-export async function getPeliculas() {
-  const [{ data }, categorias] = await Promise.all([
-    request(`/movies?limit=${CONFIG.API_LIMIT}`),
+// Pide al backend las películas aprobadas ya filtradas, ordenadas y paginadas.
+// sort: ranking | popularidad | recientes | titulo | anio
+// Devuelve { peliculas, paginacion } con el nombre de la categoría ya resuelto.
+export async function getPeliculas({ sort = 'recientes', page = 1, limit = CONFIG.PAGE_SIZE, categoriaId } = {}) {
+  const params = new URLSearchParams({ sort, page, limit });
+  if (categoriaId) params.set('categoryId', categoriaId);
+
+  const [{ data, pagination }, categorias] = await Promise.all([
+    request(`/movies?${params}`),
     getCategorias(),
   ]);
   const nombres = new Map(categorias.map((c) => [c.id, c.name]));
 
-  return data.map((m) => ({
+  const peliculas = data.map((m) => ({
     id: m.id,
     titulo: m.title,
     descripcion: m.description,
@@ -45,4 +60,5 @@ export async function getPeliculas() {
     ranking: m.stats.rankingScore,
     creada: m.createdAt,
   }));
+  return { peliculas, paginacion: pagination };
 }

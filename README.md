@@ -15,10 +15,10 @@ Los módulos ES requieren un servidor local (no abrir con doble clic):
     python -m http.server 5500
 
 Abrir http://localhost:5500 (el puerto debe coincidir con `FRONT_URL` del backend por CORS).
-El backend debe estar corriendo en `http://localhost:3000` (`API_URL` en `js/utils/config.js`).
+`API_URL` en `js/utils/config.js` apunta al backend desplegado en Render; para probar con el backend local cámbiala a `http://localhost:3000/api/v1`.
 
-Nota: la API aún no soporta ordenar; el ranking, la popularidad y la paginación se calculan
-en el frontend sobre las primeras 100 películas aprobadas.
+El orden, el filtro por categoría y la paginación los hace el backend (`?sort=`, `?categoryId=`, `?page=`, `?limit=`).
+El inicio pide `sort=ranking` (Top 5) y `sort=popularidad` (más populares).
 
 ## Flujo de trabajo (Scrum)
 Una rama por tarea: `feature/hu-XX-descripcion`, PR hacia `dev`.
