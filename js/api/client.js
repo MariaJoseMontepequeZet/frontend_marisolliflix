@@ -1,10 +1,20 @@
 import { CONFIG } from '../utils/config.js';
 
 async function request(path) {
-  const res = await fetch(`${CONFIG.API_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!res.ok) throw new Error(`Error ${res.status} al consultar ${path}`);
+  let res;
+  try {
+    res = await fetch(`${CONFIG.API_URL}${path}`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch {
+    throw new Error('No se pudo conectar con el servidor.');
+  }
+  if (!res.ok) {
+    // El backend responde { status: 'error', message, errors? }
+    const cuerpo = await res.json().catch(() => ({}));
+    const detalle = (cuerpo.errors ?? []).map((e) => e.message).join(' ');
+    throw new Error([cuerpo.message ?? `Error ${res.status}`, detalle].filter(Boolean).join(': '));
+  }
   return res.json();
 }
 

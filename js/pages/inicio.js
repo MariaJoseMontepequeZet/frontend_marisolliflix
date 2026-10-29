@@ -35,8 +35,8 @@ async function init() {
     top.removeAttribute('aria-busy');
     populares.removeAttribute('aria-busy');
   } catch (e) {
-    mostrarError(top);
-    mostrarError(populares);
+    mostrarError(top, e.message);
+    mostrarError(populares, e.message);
   }
 }
 

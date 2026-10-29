@@ -52,7 +52,7 @@ async function init() {
       categorias.map((c) => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
     render();
   } catch (e) {
-    mostrarError(grid);
+    mostrarError(grid, e.message);
   }
 }
 
