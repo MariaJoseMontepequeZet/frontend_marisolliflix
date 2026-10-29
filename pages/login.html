@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MarisolliFlix · Entrar</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <a class="logo" href="../index.html">MarisolliFlix</a>
+    <nav class="nav">
+      <a href="../index.html">Inicio</a>
+      <a href="listado.html">Películas</a>
+    </nav>
+  </header>
+  <main>
+    <section class="section section--angosta">
+      <div class="tabs" role="tablist">
+        <button class="tab active" role="tab" data-modo="login" aria-selected="true">Entrar</button>
+        <button class="tab" role="tab" data-modo="registro" aria-selected="false">Crear cuenta</button>
+      </div>
+
+      <form id="form-login" class="form" method="post" novalidate>
+        <label>Correo <input type="email" name="email" autocomplete="email" required></label>
+        <label>Contraseña <input type="password" name="password" autocomplete="current-password" required></label>
+        <p class="form__error" role="alert" hidden></p>
+        <button class="btn" type="submit">Entrar</button>
+      </form>
+
+      <form id="form-registro" class="form" method="post" novalidate hidden>
+        <label>Nombre de usuario <input type="text" name="username" maxlength="50" autocomplete="username" required></label>
+        <label>Correo <input type="email" name="email" autocomplete="email" required></label>
+        <label>Contraseña (8 a 72 caracteres) <input type="password" name="password" autocomplete="new-password" required></label>
+        <p class="form__error" role="alert" hidden></p>
+        <button class="btn" type="submit">Crear cuenta</button>
+      </form>
+    </section>
+  </main>
+  <script type="module" src="../js/main.js"></script>
+  <script type="module" src="../js/pages/login.js"></script>
+</body>
+</html>

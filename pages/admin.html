@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MarisolliFlix · Administración</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <a class="logo" href="../index.html">MarisolliFlix</a>
+    <nav class="nav">
+      <a href="../index.html">Inicio</a>
+      <a href="listado.html">Películas</a>
+    </nav>
+  </header>
+  <main>
+    <section class="section">
+      <h1>Panel de administración</h1>
+      <p id="aviso-acceso" class="state state--error" hidden></p>
+
+      <div id="panel-admin" hidden>
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" data-tab="categorias" aria-selected="true">Categorías</button>
+          <button class="tab" role="tab" data-tab="peliculas" aria-selected="false">Películas</button>
+          <button class="tab" role="tab" data-tab="pendientes" aria-selected="false">Pendientes <span id="contador-pendientes" class="badge" hidden></span></button>
+        </div>
+
+        <div id="tab-categorias" role="tabpanel">
+          <div class="toolbar"><button class="btn" data-accion="nueva-cat">Nueva categoría</button></div>
+          <div id="lista-categorias" data-lista="categorias"></div>
+        </div>
+
+        <div id="tab-peliculas" role="tabpanel" hidden>
+          <div class="toolbar">
+            <button class="btn" data-accion="nueva-peli">Nueva película</button>
+            <label>Estado
+              <select id="filtro-estado">
+                <option value="">Todos</option>
+                <option value="pending">Pendientes</option>
+                <option value="approved">Aprobadas</option>
+                <option value="rejected">Rechazadas</option>
+              </select>
+            </label>
+          </div>
+          <div id="lista-peliculas" data-lista="peliculas"></div>
+        </div>
+
+        <div id="tab-pendientes" role="tabpanel" hidden>
+          <div id="lista-pendientes" data-lista="pendientes"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="../js/main.js"></script>
+  <script type="module" src="../js/pages/admin.js"></script>
+</body>
+</html>
