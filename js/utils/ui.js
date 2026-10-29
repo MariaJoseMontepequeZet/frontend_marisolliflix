@@ -4,6 +4,10 @@ export function escapeHTML(texto) {
   return div.innerHTML;
 }
 
+export function textoRating(p) {
+  return p.resenas ? `★ ${p.rating.toFixed(1)}` : 'Sin reseñas';
+}
+
 export function renderCard(p) {
   const poster = p.imagen
     ? `<img src="${escapeHTML(p.imagen)}" alt="Póster de ${escapeHTML(p.titulo)}" loading="lazy">`
@@ -14,7 +18,7 @@ export function renderCard(p) {
       <div class="card__body">
         <h3 class="card__title">${escapeHTML(p.titulo)}</h3>
         <p class="card__meta">${escapeHTML(p.categoria)} · ${escapeHTML(String(p.anio))}</p>
-        <span class="badge">★ ${p.rating.toFixed(1)}</span>
+        <span class="badge">${textoRating(p)}</span>
       </div>
     </article>`;
 }

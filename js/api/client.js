@@ -1,33 +1,38 @@
 import { CONFIG } from '../utils/config.js';
-import { PELICULAS_MOCK } from '../mock/peliculas.js';
 
-async function request(path, options = {}) {
+async function request(path) {
   const res = await fetch(`${CONFIG.API_URL}${path}`, {
     headers: { 'Content-Type': 'application/json' },
-    ...options,
   });
   if (!res.ok) throw new Error(`Error ${res.status} al consultar ${path}`);
   return res.json();
 }
 
-// Normaliza los campos para que la UI no dependa del formato exacto del backend.
-function normalizar(p) {
-  return {
-    id: p.id,
-    titulo: p.titulo ?? p.title ?? 'Sin título',
-    categoria: p.categoria ?? p.genero ?? 'Sin categoría',
-    anio: p.anio ?? p.year ?? '',
-    rating: Number(p.rating ?? p.ranking ?? 0),
-    popularidad: Number(p.popularidad ?? p.vistas ?? 0),
-    descripcion: p.descripcion ?? p.sinopsis ?? '',
-    imagen: p.imagen ?? p.poster ?? '',
-  };
+export async function getCategorias() {
+  const { data } = await request('/categories');
+  return data;
 }
 
+// Devuelve las películas aprobadas con el nombre de su categoría ya resuelto.
 export async function getPeliculas() {
-  const data = CONFIG.USE_MOCK
-    ? await new Promise((r) => setTimeout(() => r(PELICULAS_MOCK), 400))
-    : await request('/peliculas');
-  const lista = Array.isArray(data) ? data : data.items ?? data.data ?? [];
-  return lista.map(normalizar);
+  const [{ data }, categorias] = await Promise.all([
+    request(`/movies?limit=${CONFIG.API_LIMIT}`),
+    getCategorias(),
+  ]);
+  const nombres = new Map(categorias.map((c) => [c.id, c.name]));
+
+  return data.map((m) => ({
+    id: m.id,
+    titulo: m.title,
+    descripcion: m.description,
+    categoriaId: m.categoryId,
+    categoria: nombres.get(m.categoryId) ?? 'Sin categoría',
+    tipo: m.type,
+    anio: m.year,
+    imagen: m.imageUrl ?? '',
+    resenas: m.stats.reviewCount,
+    rating: m.stats.avgRating,
+    ranking: m.stats.rankingScore,
+    creada: m.createdAt,
+  }));
 }

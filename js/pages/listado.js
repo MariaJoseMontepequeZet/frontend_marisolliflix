@@ -1,4 +1,4 @@
-import { getPeliculas } from '../api/client.js';
+import { getPeliculas, getCategorias } from '../api/client.js';
 import { CONFIG } from '../utils/config.js';
 import { escapeHTML, renderCard, mostrarCarga, mostrarVacio, mostrarError } from '../utils/ui.js';
 
@@ -8,10 +8,11 @@ const orden = document.getElementById('orden');
 const paginacion = document.getElementById('paginacion');
 
 const ORDENES = {
-  ranking: (a, b) => b.rating - a.rating,
-  popularidad: (a, b) => b.popularidad - a.popularidad,
+  ranking: (a, b) => b.ranking - a.ranking || b.resenas - a.resenas,
+  popularidad: (a, b) => b.resenas - a.resenas || b.ranking - a.ranking,
   titulo: (a, b) => a.titulo.localeCompare(b.titulo, 'es'),
-  anio: (a, b) => Number(b.anio) - Number(a.anio),
+  anio: (a, b) => b.anio - a.anio,
+  reciente: (a, b) => new Date(b.creada) - new Date(a.creada),
 };
 
 let peliculas = [];
@@ -19,7 +20,7 @@ let pagina = 1;
 
 function render() {
   const lista = peliculas
-    .filter((p) => !filtro.value || p.categoria === filtro.value)
+    .filter((p) => !filtro.value || p.categoriaId === Number(filtro.value))
     .sort(ORDENES[orden.value]);
 
   const totalPaginas = Math.max(1, Math.ceil(lista.length / CONFIG.PAGE_SIZE));
@@ -44,11 +45,11 @@ function render() {
 async function init() {
   mostrarCarga(grid, CONFIG.PAGE_SIZE);
   try {
-    peliculas = await getPeliculas();
-    const categorias = [...new Set(peliculas.map((p) => p.categoria))].sort();
+    const [lista, categorias] = await Promise.all([getPeliculas(), getCategorias()]);
+    peliculas = lista;
     filtro.innerHTML =
       '<option value="">Todas</option>' +
-      categorias.map((c) => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
+      categorias.map((c) => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
     render();
   } catch (e) {
     mostrarError(grid);
