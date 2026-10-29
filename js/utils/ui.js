@@ -1,7 +1,8 @@
+// Escapa también las comillas: se usa dentro de atributos (src="...", value="...").
+const ENTIDADES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
 export function escapeHTML(texto) {
-  const div = document.createElement('div');
-  div.textContent = texto ?? '';
-  return div.innerHTML;
+  return String(texto ?? '').replace(/[&<>"']/g, (c) => ENTIDADES[c]);
 }
 
 export function textoRating(p) {
