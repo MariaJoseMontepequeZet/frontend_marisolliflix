@@ -1,5 +1,6 @@
 // Sesión del usuario guardada en el navegador (token JWT + datos básicos).
-const CLAVE = 'marisolliflix_sesion';
+export const CLAVE_SESION = 'marisolliflix_sesion';
+const CLAVE = CLAVE_SESION;
 
 export function getSesion() {
   try {
