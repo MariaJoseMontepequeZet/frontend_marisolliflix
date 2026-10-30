@@ -24,7 +24,7 @@ export function renderPoster(p) {
 export function renderCard(p) {
   return `
     <article class="card">
-      <a class="card__link" href="${urlDetalle(p.id)}" aria-label="Ver ${escapeHTML(p.titulo)}">
+      <a class="card__link" href="${urlDetalle(p.id)}" data-pelicula="${escapeHTML(String(p.id))}" aria-label="Ver ${escapeHTML(p.titulo)}">
         ${renderPoster(p)}
         <div class="card__body">
           <h3 class="card__title">${escapeHTML(p.titulo)}</h3>
