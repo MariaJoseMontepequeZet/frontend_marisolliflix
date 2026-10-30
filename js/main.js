@@ -1,6 +1,5 @@
 import { getUsuario, cerrarSesion } from './utils/auth.js';
 
-// Las páginas dentro de /pages/ enlazan entre sí sin prefijo; el inicio necesita "pages/".
 const enPages = location.pathname.includes('/pages/');
 const base = enPages ? '' : 'pages/';
 const nav = document.querySelector('.nav');
