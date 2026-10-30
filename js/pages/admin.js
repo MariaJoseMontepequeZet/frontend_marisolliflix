@@ -45,8 +45,8 @@ function filaPelicula(p, acciones) {
   </li>`;
 }
 
-const ACCIONES_PELICULA = [['editar-peli', 'Editar', 'btn--sec'], ['borrar-peli', 'Eliminar', 'btn--peligro']];
-const ACCIONES_PENDIENTE = [['aprobar', 'Aprobar', ''], ['rechazar', 'Rechazar', 'btn--peligro']];
+const ACCIONES_PELICULA = [['ver-peli', 'Ver', 'btn--sec'], ['editar-peli', 'Editar', 'btn--sec'], ['borrar-peli', 'Eliminar', 'btn--peligro']];
+const ACCIONES_PENDIENTE = [['ver-peli', 'Ver', 'btn--sec'], ['aprobar', 'Aprobar', ''], ['rechazar', 'Rechazar', 'btn--peligro']];
 
 // ---- Pintar cada pestaña ----
 function pintarCategorias() {
@@ -149,6 +149,12 @@ const ACCIONES = {
       alEnviar: (d) => proponerPelicula(datosPelicula(d)),
     });
     if (guardado) { avisar('Película creada y aprobada.'); await refrescarPeliculas(); }
+  },
+
+  // La misma ventana emergente que ve cualquier visitante (el admin ve ademas las pendientes)
+  async 'ver-peli'(id) {
+    const { abrirPelicula } = await import('../utils/ventanaPelicula.js');
+    abrirPelicula(id);
   },
 
   async 'editar-peli'(id) {
