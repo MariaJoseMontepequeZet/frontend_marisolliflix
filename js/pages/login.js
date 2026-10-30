@@ -5,6 +5,13 @@ const formLogin = document.getElementById('form-login');
 const formRegistro = document.getElementById('form-registro');
 const tabs = document.querySelectorAll('.tab');
 
+// ?volver=/ruta lleva de vuelta a la página donde se pidió iniciar sesión.
+// Solo se aceptan rutas del propio sitio (empiezan con una sola "/"), nunca otra dirección.
+const volver = new URLSearchParams(location.search).get('volver');
+const esRutaPropia = (ruta) =>
+  typeof ruta === 'string' && ruta.startsWith('/') && !ruta.startsWith('//') && !ruta.includes('\\') && !ruta.includes(':');
+const destinoVolver = esRutaPropia(volver) ? volver : null;
+
 tabs.forEach((tab) => tab.addEventListener('click', () => {
   const esLogin = tab.dataset.modo === 'login';
   formLogin.hidden = !esLogin;
@@ -40,7 +47,7 @@ function manejar(form, accion) {
 manejar(formLogin, async (datos) => {
   const { token, user } = await login(datos.email, datos.password);
   guardarSesion(token, user);
-  location.href = user.role === 'admin' ? 'admin.html' : '../index.html';
+  location.href = destinoVolver ?? (user.role === 'admin' ? 'admin.html' : '../index.html');
 });
 
 manejar(formRegistro, async (datos) => {
@@ -48,5 +55,5 @@ manejar(formRegistro, async (datos) => {
   // Después de crear la cuenta se inicia sesión sola
   const { token, user } = await login(datos.email, datos.password);
   guardarSesion(token, user);
-  location.href = '../index.html';
+  location.href = destinoVolver ?? '../index.html';
 });

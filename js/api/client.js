@@ -1,12 +1,13 @@
 import { CONFIG } from '../utils/config.js';
 import { getToken, cerrarSesion } from '../utils/auth.js';
 
-// auth: true envía el token de la sesión. Si el backend responde 401 con sesión
+// auth: true envía el token de la sesión y exige tenerla; auth: 'opcional' lo envía solo
+// si hay sesión (así el backend sabe quién mira). Si el backend responde 401 con sesión
 // iniciada, el token venció o ya no sirve: se cierra la sesión.
 async function request(path, { method = 'GET', body, auth = false } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const token = auth ? getToken() : null;
-  if (auth && !token) throw new Error('Debes iniciar sesión.');
+  if (auth === true && !token) throw new Error('Debes iniciar sesión.');
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let res;
@@ -27,7 +28,7 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
       cerrarSesion();
       throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
     }
-    const detalle = (cuerpo.errors ?? []).map((e) => e.message).join(' ');
+    const detalle = (cuerpo.errors ?? []).map((e) => e.message).join(' · ');
     throw new Error([cuerpo.message ?? `Error ${res.status}`, detalle].filter(Boolean).join(': '));
   }
   return res.json();
@@ -89,6 +90,40 @@ export async function getPeliculas({ sort = 'recientes', page = 1, limit = CONFI
   const peliculas = data.map((m) => aPelicula(m, nombres));
   return { peliculas, paginacion: pagination };
 }
+
+// ---- Detalle y reseñas ----
+// Detalle de una película con sus reseñas. Si hay sesión se envía el token: así llegan
+// `myVote` (tu voto en cada reseña) y se pueden ver las películas propias aún pendientes.
+export async function getPelicula(id) {
+  const [{ data }, categorias] = await Promise.all([
+    request(`/movies/${encodeURIComponent(id)}`, { auth: 'opcional' }),
+    getCategorias(),
+  ]);
+  const nombres = new Map(categorias.map((c) => [c.id, c.name]));
+  return {
+    pelicula: { ...aPelicula(data, nombres), likes: data.stats.likes, dislikes: data.stats.dislikes, creadaPor: data.createdBy },
+    resenas: data.reviews.map((r) => ({
+      id: r.id,
+      titulo: r.title,
+      rating: r.rating,
+      comentario: r.comment,
+      autor: r.author,
+      likes: r.likes,
+      dislikes: r.dislikes,
+      miVoto: r.myVote,
+      creada: r.createdAt,
+      editada: r.updatedAt,
+    })),
+  };
+}
+
+export const crearResena = (peliculaId, { title, rating, comment }) =>
+  request(`/movies/${peliculaId}/reviews`, { method: 'POST', body: { title, rating, comment }, auth: true });
+export const editarResena = (id, { title, rating, comment }) =>
+  request(`/reviews/${id}`, { method: 'PUT', body: { title, rating, comment }, auth: true });
+export const borrarResena = (id) => request(`/reviews/${id}`, { method: 'DELETE', auth: true });
+// type: 'like' | 'dislike'. Repetir el mismo tipo quita el voto.
+export const reaccionar = (id, type) => request(`/reviews/${id}/reaction`, { method: 'POST', body: { type }, auth: true });
 
 // ---- Sesión ----
 export const login = (email, password) => request('/auth/login', { method: 'POST', body: { email, password } });
