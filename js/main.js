@@ -24,3 +24,14 @@ const actual = location.pathname.split('/').pop() || 'index.html';
 nav.querySelectorAll('a').forEach((a) => {
   if (a.getAttribute('href').split('/').pop() === actual) a.classList.add('active');
 });
+
+// Clic en una película (card o botón "Ver"): se abre su información en una ventana emergente.
+// Con Ctrl, Cmd, Shift o clic central se respeta el enlace normal (abrir en otra pestaña).
+document.addEventListener('click', async (e) => {
+  const enlace = e.target.closest('[data-pelicula]');
+  if (!enlace || e.defaultPrevented) return;
+  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  const { abrirPelicula } = await import('./utils/ventanaPelicula.js');
+  abrirPelicula(enlace.dataset.pelicula);
+});

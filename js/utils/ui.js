@@ -9,18 +9,29 @@ export function textoRating(p) {
   return p.resenas ? `★ ${p.rating.toFixed(1)}` : 'Sin reseñas';
 }
 
-export function renderCard(p) {
-  const poster = p.imagen
+// Dirección del detalle: desde /pages/ se enlaza sin prefijo; desde el inicio hace falta "pages/"
+export function urlDetalle(id) {
+  const base = location.pathname.includes('/pages/') ? '' : 'pages/';
+  return `${base}detalle.html?id=${encodeURIComponent(id)}`;
+}
+
+export function renderPoster(p) {
+  return p.imagen
     ? `<img src="${escapeHTML(p.imagen)}" alt="Póster de ${escapeHTML(p.titulo)}" loading="lazy">`
     : `<div class="card__placeholder" aria-hidden="true">${escapeHTML(p.titulo.charAt(0))}</div>`;
+}
+
+export function renderCard(p) {
   return `
     <article class="card">
-      ${poster}
-      <div class="card__body">
-        <h3 class="card__title">${escapeHTML(p.titulo)}</h3>
-        <p class="card__meta">${escapeHTML(p.categoria)} · ${escapeHTML(String(p.anio))}</p>
-        <span class="badge">${textoRating(p)}</span>
-      </div>
+      <a class="card__link" href="${urlDetalle(p.id)}" data-pelicula="${escapeHTML(String(p.id))}" aria-label="Ver ${escapeHTML(p.titulo)}">
+        ${renderPoster(p)}
+        <div class="card__body">
+          <h3 class="card__title">${escapeHTML(p.titulo)}</h3>
+          <p class="card__meta">${escapeHTML(p.categoria)} · ${escapeHTML(String(p.anio))}</p>
+          <span class="badge">${textoRating(p)}</span>
+        </div>
+      </a>
     </article>`;
 }
 

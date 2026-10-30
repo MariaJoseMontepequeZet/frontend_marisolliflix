@@ -26,7 +26,7 @@ export function camposPelicula(categorias, v = {}, { conEstado = false } = {}) {
       <label>Año <input type="number" name="year" min="1888" max="${new Date().getFullYear() + 5}" value="${escapeHTML(v.anio)}" required></label>
       <label>Tipo <select name="type" required>${opciones(NOMBRE_TIPO, v.tipo)}</select></label>
     </div>
-    <label>Imagen (URL, opcional) <input type="url" name="imageUrl" maxlength="500" value="${escapeHTML(v.imagen)}"></label>
+    <label>Imagen (URL o ruta del sitio, opcional) <input type="text" name="imageUrl" maxlength="500" value="${escapeHTML(v.imagen)}"></label>
     ${conEstado ? `<label>Estado <select name="status">${opciones(NOMBRE_ESTADO, v.estado)}</select></label>` : ''}`;
 }
 

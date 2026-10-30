@@ -18,7 +18,7 @@ Los módulos ES requieren un servidor local (no abrir con doble clic):
     python -m http.server 5500
 
 Abrir http://localhost:5500 (el puerto debe coincidir con `FRONT_URL` del backend por CORS).
-`API_URL` en `js/utils/config.js` apunta al backend desplegado en Render; para probar con el backend local cámbiala a `http://localhost:3000/api/v1`.
+`API_URL` en `js/utils/config.js` se elige sola: en `localhost` usa el backend local (`http://localhost:3000/api/v1`) y en el servidor usa `/api/v1` (mismo dominio).
 
 El orden, el filtro por categoría y la paginación los hace el backend (`?sort=`, `?categoryId=`, `?page=`, `?limit=`).
 El inicio pide `sort=ranking` (Top 5) y `sort=popularidad` (más populares).

@@ -43,3 +43,5 @@ async function init() {
 }
 
 init();
+// Si se publicó o votó una reseña en la ventana, las tarjetas se actualizan
+document.addEventListener('pelicula-cambiada', init);

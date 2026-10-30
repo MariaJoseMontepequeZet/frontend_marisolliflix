@@ -65,3 +65,4 @@ paginacion.addEventListener('click', (e) => {
 });
 
 init();
+document.addEventListener('pelicula-cambiada', cargar);
