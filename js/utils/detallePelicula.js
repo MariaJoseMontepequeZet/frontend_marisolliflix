@@ -1,6 +1,6 @@
 import { getPelicula, crearResena, editarResena, borrarResena, reaccionar } from '../api/client.js';
 import { getUsuario } from './auth.js';
-import { escapeHTML, renderPoster, mostrarError, urlDetalle } from './ui.js';
+import { escapeHTML, renderPoster, mostrarError, urlDetalle, SIZES_DETALLE } from './ui.js';
 import { abrirModal, confirmar, avisar } from './modal.js';
 
 const TIPOS = { pelicula: 'Película', serie: 'Serie', anime: 'Anime' };
@@ -11,15 +11,33 @@ const fecha = (iso) => new Date(iso).toLocaleDateString('es', { day: 'numeric', 
 const fueEditada = (r) => new Date(r.editada) - new Date(r.creada) > 1000;
 
 function camposResena(r = {}) {
+  // Sin valor por defecto: una nota preseleccionada sesga la calificación
+  const vacia = `<option value=""${r.rating ? '' : ' selected'} disabled>Elige una calificación…</option>`;
   const opciones = Array.from({ length: 10 }, (_, i) => i + 1)
-    .map((n) => `<option value="${n}"${n === (r.rating ?? 8) ? ' selected' : ''}>${n}</option>`).join('');
+    .map((n) => `<option value="${n}"${n === r.rating ? ' selected' : ''}>${n}</option>`).join('');
   return `
     <label>Título <input type="text" name="title" maxlength="255" required value="${escapeHTML(r.titulo ?? '')}"></label>
-    <label>Calificación (1 a 10) <select name="rating">${opciones}</select></label>
+    <label>Calificación (1 a 10) <select name="rating" required>${vacia}${opciones}</select></label>
     <label>Comentario <textarea name="comment" rows="4" maxlength="1000" required>${escapeHTML(r.comentario ?? '')}</textarea></label>`;
 }
 
 const datosResena = (f) => ({ title: f.title.trim(), rating: Number(f.rating), comment: f.comment.trim() });
+
+// El formulario no usa la validación nativa del navegador, así que se revisa aquí antes de enviar
+// (el backend también rechaza títulos y comentarios vacíos o solo con espacios)
+function errorResena(d) {
+  if (!d.title) return 'Escribe un título (no puede quedar vacío ni tener solo espacios).';
+  if (!Number.isInteger(d.rating) || d.rating < 1 || d.rating > 10) return 'Elige una calificación del 1 al 10.';
+  if (!d.comment) return 'Escribe un comentario (no puede quedar vacío ni tener solo espacios).';
+  return null;
+}
+
+function validarResena(f) {
+  const datos = datosResena(f);
+  const problema = errorResena(datos);
+  if (problema) throw new Error(problema);
+  return datos;
+}
 
 // Dibuja la información de una película y sus reseñas dentro de `raiz`.
 // Sirve igual para la página de detalle y para la ventana emergente (enModal).
@@ -60,23 +78,27 @@ export function montarDetalle(raiz, id, { enModal = false, alCambiar = () => {},
     const tipoYCategoria = tipo.toLowerCase() === p.categoria.toLowerCase()
       ? escapeHTML(p.categoria)
       : `${escapeHTML(tipo)} · ${escapeHTML(p.categoria)}`;
-    const nota = p.resenas ? `${p.rating.toFixed(1)} / 10` : '—';
-    const ranking = p.resenas ? p.ranking.toFixed(1) : '—';
+    // Sin reseñas no hay datos: las cuatro casillas muestran "—" con el mismo formato
+    const hay = p.resenas > 0;
+    const nota = hay ? `${p.rating.toFixed(1)} / 10` : '—';
+    const cuantas = hay ? p.resenas : '—';
+    const ranking = hay ? p.ranking.toFixed(1) : '—';
+    const likes = hay ? p.likes : '—';
     const enlace = enModal
       ? `<a class="volver" href="${urlDetalle(id)}">Abrir en página completa ↗</a>`
       : '<a class="volver" href="listado.html">← Volver al catálogo</a>';
     info.innerHTML = `
       ${enlace}
       <article class="detalle">
-        <div class="detalle__poster">${renderPoster(p)}</div>
+        <div class="detalle__poster">${renderPoster(p, { prioridad: true, sizes: SIZES_DETALLE })}</div>
         <div class="detalle__info">
           <${enModal ? 'h2' : 'h1'} class="detalle__titulo">${escapeHTML(p.titulo)}</${enModal ? 'h2' : 'h1'}>
           <p class="detalle__meta">${escapeHTML(String(p.anio))} · ${tipoYCategoria} ${estado}</p>
           <dl class="detalle__stats">
             <div><dt>Calificación</dt><dd>${nota}</dd></div>
-            <div><dt>Reseñas</dt><dd>${p.resenas}</dd></div>
+            <div><dt>Reseñas</dt><dd>${cuantas}</dd></div>
             <div><dt>Ranking</dt><dd>${ranking}</dd></div>
-            <div><dt>Likes</dt><dd>${p.likes}</dd></div>
+            <div><dt>Likes</dt><dd>${likes}</dd></div>
           </dl>
           <p class="detalle__desc">${escapeHTML(p.descripcion)}</p>
         </div>
@@ -106,7 +128,7 @@ export function montarDetalle(raiz, id, { enModal = false, alCambiar = () => {},
   function renderResena(r, usuario) {
     const soyYo = usuario && r.autor.id === usuario.id;
     const votos = soyYo
-      ? `<span class="voto voto--solo">👍 ${r.likes}</span><span class="voto voto--solo">👎 ${r.dislikes}</span>
+      ? `<span class="voto--solo" aria-label="${r.likes} me gusta">👍 ${r.likes}</span><span class="voto--solo" aria-label="${r.dislikes} no me gusta">👎 ${r.dislikes}</span>
          <button class="btn btn--sec btn--chico" data-accion="editar">Editar</button>
          <button class="btn btn--peligro btn--chico" data-accion="borrar">Eliminar</button>`
       : `<button class="voto" data-accion="like" aria-pressed="${r.miVoto === 1}" aria-label="Me gusta">👍 ${r.likes}</button>
@@ -172,7 +194,7 @@ export function montarDetalle(raiz, id, { enModal = false, alCambiar = () => {},
     error.hidden = true;
     boton.disabled = true;
     try {
-      await crearResena(id, datosResena(Object.fromEntries(new FormData(form))));
+      await crearResena(id, validarResena(Object.fromEntries(new FormData(form))));
       avisar('Reseña publicada.');
       await recargarTrasCambio();
     } catch (err) {
@@ -202,7 +224,7 @@ export function montarDetalle(raiz, id, { enModal = false, alCambiar = () => {},
         const guardado = await abrirModal({
           titulo: 'Editar tu reseña',
           cuerpo: camposResena(resena),
-          alEnviar: (f) => editarResena(resenaId, datosResena(f)),
+          alEnviar: (f) => editarResena(resenaId, validarResena(f)),
         });
         if (guardado) {
           avisar('Reseña actualizada.');
@@ -220,6 +242,16 @@ export function montarDetalle(raiz, id, { enModal = false, alCambiar = () => {},
       boton.disabled = false;
     }
   });
+
+  // Si la sesión cambia en otra pestaña se vuelve a pintar (formulario, "Tu reseña", votos)
+  const alCambiarSesion = () => {
+    if (!raiz.isConnected) {
+      document.removeEventListener('sesion-cambiada', alCambiarSesion);
+      return;
+    }
+    if (datos) cargar({ silencioso: true });
+  };
+  document.addEventListener('sesion-cambiada', alCambiarSesion);
 
   if (!/^[1-9]\d*$/.test(String(id ?? ''))) {
     mostrarError(info, 'Película no válida. Vuelve al catálogo y elige una.');

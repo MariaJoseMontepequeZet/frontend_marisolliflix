@@ -61,7 +61,8 @@ paginacion.addEventListener('click', (e) => {
   if (!dir) return;
   pagina += Number(dir);
   cargar();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: sinMovimiento ? 'auto' : 'smooth' });
 });
 
 init();

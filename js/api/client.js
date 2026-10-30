@@ -64,6 +64,7 @@ function aPelicula(m, nombres) {
     resenas: m.stats.reviewCount,
     rating: m.stats.avgRating,
     ranking: m.stats.rankingScore,
+    likes: m.stats.likes,
     creada: m.createdAt,
   };
 }
