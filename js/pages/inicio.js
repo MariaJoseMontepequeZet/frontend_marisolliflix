@@ -9,10 +9,6 @@ const populares = document.getElementById('populares');
 // Las películas sin sinopsis real traen un texto de relleno; no sirven para el hero
 const tieneSinopsis = (p) => !/pendiente de agregar/i.test(p.descripcion ?? '');
 
-// Mejor ranking primero; si empatan, gana la que tiene más reseñas, luego más likes y luego el título
-const porRanking = (a, b) =>
-  b.ranking - a.ranking || b.resenas - a.resenas || b.likes - a.likes || a.titulo.localeCompare(b.titulo, 'es');
-
 // El badge de calificación solo se muestra si la película ya tiene reseñas
 function renderHero(p) {
   const badge = p.resenas ? `<span class="badge">${textoRating(p)}</span>` : '';
@@ -29,11 +25,10 @@ async function init() {
   mostrarCarga(top, CONFIG.TOP_RANKING);
   mostrarCarga(populares, 6);
   try {
-    // El backend ya ordena. Se piden de más las populares porque se descartan las que
+    // El backend ya ordena (con desempate fijo, así que el Top no cambia). Se piden de más las populares porque se descartan las que
     // no tienen reseñas y las que ya salieron en el Top 5.
     const [ranking, masPopulares] = await Promise.all([
-      // Se piden más de 5 para poder desempatar aquí antes de recortar el Top
-      getPeliculas({ sort: 'ranking', limit: CONFIG.TOP_RANKING * 4 }),
+      getPeliculas({ sort: 'ranking', limit: CONFIG.TOP_RANKING }),
       getPeliculas({ sort: 'popularidad', limit: CONFIG.POPULARES + CONFIG.TOP_RANKING }),
     ]);
     if (!ranking.peliculas.length) {
@@ -43,10 +38,7 @@ async function init() {
     }
 
     // Sin reseñas no hay ranking real: el orden sería arbitrario, así que solo cuentan las reseñadas
-    const topLista = ranking.peliculas
-      .filter((p) => p.resenas > 0)
-      .sort(porRanking)
-      .slice(0, CONFIG.TOP_RANKING);
+    const topLista = ranking.peliculas.filter((p) => p.resenas > 0);
     const yaMostradas = new Set(topLista.map((p) => p.id));
     const popularesLista = masPopulares.peliculas
       .filter((p) => p.resenas > 0 && !yaMostradas.has(p.id))
