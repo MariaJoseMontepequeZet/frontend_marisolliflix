@@ -1,7 +1,10 @@
-import { getPelicula, crearResena, editarResena, borrarResena, reaccionar } from '../api/client.js';
+import {
+  getPelicula, crearResena, editarResena, borrarResena, reaccionar, agregarALista, quitarDeLista,
+} from '../api/client.js';
 import { getUsuario } from './auth.js';
-import { escapeHTML, renderPoster, mostrarError, urlDetalle, SIZES_DETALLE } from './ui.js';
+import { escapeHTML, renderPoster, mostrarError, urlDetalle, SIZES_DETALLE, textoImdb } from './ui.js';
 import { abrirModal, confirmar, avisar } from './modal.js';
+import { renderTrailer, renderStreaming, reproducirTrailer } from './streaming.js';
 
 const TIPOS = { pelicula: 'Película', serie: 'Serie', anime: 'Anime' };
 const ESTADOS = { pending: 'Pendiente de aprobación', rejected: 'Rechazada' };
@@ -94,16 +97,46 @@ export function montarDetalle(raiz, id, { enModal = false, alCambiar = () => {},
         <div class="detalle__info">
           <${enModal ? 'h2' : 'h1'} class="detalle__titulo">${escapeHTML(p.titulo)}</${enModal ? 'h2' : 'h1'}>
           <p class="detalle__meta">${escapeHTML(String(p.anio))} · ${tipoYCategoria} ${estado}</p>
+          ${p.estado === 'approved' ? botonLista(p) : ''}
           <dl class="detalle__stats">
             <div><dt>Calificación</dt><dd>${nota}</dd></div>
             <div><dt>Reseñas</dt><dd>${cuantas}</dd></div>
             <div><dt>Ranking</dt><dd>${ranking}</dd></div>
             <div><dt>Likes</dt><dd>${likes}</dd></div>
+            <div class="stat--imdb"><dt>IMDb</dt><dd>${p.imdb == null ? '—' : `${textoImdb(p)} / 10`}</dd></div>
           </dl>
           <p class="detalle__desc">${escapeHTML(p.descripcion)}</p>
+          ${renderStreaming(p)}
         </div>
-      </article>`;
+      </article>
+      ${renderTrailer(p)}`;
     alTitulo(p.titulo);
+  }
+
+  function botonLista(p) {
+    return `<button type="button" class="btn btn--lista${p.enLista ? ' btn--lista-activa' : ''}" data-lista aria-pressed="${p.enLista}">
+      ${p.enLista ? '✓ En mi lista' : '+ Mi lista'}
+    </button>`;
+  }
+
+  async function alternarLista(boton) {
+    if (!getUsuario()) {
+      avisar('Inicia sesión para guardar películas en tu lista.', 'error');
+      return;
+    }
+    const p = datos.pelicula;
+    boton.disabled = true;
+    try {
+      if (p.enLista) await quitarDeLista(id);
+      else await agregarALista(id);
+      p.enLista = !p.enLista;
+      boton.outerHTML = botonLista(p);
+      avisar(p.enLista ? 'Agregada a tu lista.' : 'Quitada de tu lista.');
+      alCambiar();
+    } catch (err) {
+      avisar(err.message, 'error');
+      boton.disabled = false;
+    }
   }
 
   function renderZonaForm(usuario) {
@@ -184,6 +217,14 @@ export function montarDetalle(raiz, id, { enModal = false, alCambiar = () => {},
     await cargar({ silencioso: true });
     alCambiar();
   }
+
+  // Clic en la miniatura del trailer: se carga el reproductor
+  info.addEventListener('click', (e) => {
+    const portada = e.target.closest('[data-trailer]');
+    if (portada) reproducirTrailer(portada);
+    const lista = e.target.closest('[data-lista]');
+    if (lista) alternarLista(lista);
+  });
 
   zonaForm.addEventListener('submit', async (e) => {
     const form = e.target.closest('[data-form-resena]');

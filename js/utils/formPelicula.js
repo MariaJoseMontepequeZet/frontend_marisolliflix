@@ -1,4 +1,6 @@
 import { escapeHTML } from './ui.js';
+import { camposStreaming, datosStreaming } from './streaming.js';
+import { esAdmin } from './auth.js';
 
 export const NOMBRE_TIPO = { pelicula: 'Película', serie: 'Serie', anime: 'Anime' };
 export const NOMBRE_ESTADO = { pending: 'Pendiente', approved: 'Aprobada', rejected: 'Rechazada' };
@@ -27,11 +29,15 @@ export function camposPelicula(categorias, v = {}, { conEstado = false } = {}) {
       <label>Tipo <select name="type" required>${opciones(NOMBRE_TIPO, v.tipo)}</select></label>
     </div>
     <label>Imagen (URL o ruta del sitio, opcional) <input type="text" name="imageUrl" maxlength="500" value="${escapeHTML(v.imagen)}"></label>
+    ${esAdmin() ? `<label>Calificación en IMDb (1 a 10, opcional)
+      <input type="number" name="imdbRating" min="1" max="10" step="0.1" value="${escapeHTML(v.imdb ?? '')}">
+    </label>` : ''}
+    ${camposStreaming(v)}
     ${conEstado ? `<label>Estado <select name="status">${opciones(NOMBRE_ESTADO, v.estado)}</select></label>` : ''}`;
 }
 
 // Convierte lo que escribió el usuario al formato que espera el backend.
-// La imagen vacía se manda como null (el backend rechaza un texto vacío).
+// La imagen y el trailer vacíos se mandan como null (el backend rechaza un texto vacío).
 export function datosPelicula(crudo) {
   const datos = {
     title: crudo.title.trim(),
@@ -40,7 +46,10 @@ export function datosPelicula(crudo) {
     year: crudo.year ? Number(crudo.year) : undefined,
     type: crudo.type,
     imageUrl: crudo.imageUrl.trim() || null,
+    ...datosStreaming(crudo),
   };
+  // Solo el formulario del admin trae este campo; vacío = sin calificación
+  if (crudo.imdbRating !== undefined) datos.imdbRating = crudo.imdbRating === '' ? null : Number(crudo.imdbRating);
   if (crudo.status) datos.status = crudo.status;
   return datos;
 }
