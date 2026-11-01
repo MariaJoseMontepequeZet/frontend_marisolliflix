@@ -7,6 +7,7 @@ Interfaz web de **MarisolliFlix**, una app para registrar, calificar y rankear p
 | **Sitio publicado** | https://marisolliflix.pamcing.me |
 | **Repositorio del backend** | https://github.com/MariaJoseMontepequeZet/backend_marisolliflix |
 | **Documentación de la API (Swagger)** | https://marisolliflix.pamcing.me/api/v1/docs |
+| **Video** | [https://marisolliflix.pamcing.me/api/v1/docs](https://drive.google.com/drive/folders/1fWOdx8Gpee_4csEE-WjLwmUCvh51XfC4?usp=drive_link) |
 
 ## Contenido
 
