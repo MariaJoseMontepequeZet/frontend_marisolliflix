@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MarisolliFlix · Películas</title>
   <meta name="description" content="Explora el catálogo de películas, series y animes. Filtra por categoría y ordena por ranking, popularidad, título o año.">
-  <meta name="theme-color" content="#0f0f14">
+  <meta name="theme-color" content="#0c0420">
   <meta name="robots" content="index, follow">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MarisolliFlix">
@@ -28,7 +28,7 @@
   </header>
   <main>
     <section class="section">
-      <h1>Películas</h1>
+      <h1 id="titulo-listado">Películas</h1>
       <div class="toolbar">
         <label>Categoría
           <select id="filtro-categoria"><option value="">Todas</option></select>
@@ -40,9 +40,11 @@
             <option value="titulo">Título (A-Z)</option>
             <option value="anio">Año</option>
             <option value="recientes">Más recientes</option>
+            <option value="internet">Mejor valoradas en IMDb</option>
           </select>
         </label>
       </div>
+      <p id="aviso-orden" class="ayuda" hidden>Estas películas aún no tienen reseñas, así que empatan en ranking y popularidad y se muestran por título. El orden cambia en cuanto reciban calificaciones y likes.</p>
       <div id="grid" class="grid" aria-live="polite"></div>
       <nav id="paginacion" class="paginacion" aria-label="Paginación"></nav>
     </section>
