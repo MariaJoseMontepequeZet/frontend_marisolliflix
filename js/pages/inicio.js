@@ -1,6 +1,6 @@
 import { getPeliculas } from '../api/client.js';
 import { CONFIG } from '../utils/config.js';
-import { escapeHTML, textoRating, renderCard, mostrarCarga, mostrarVacio, mostrarError } from '../utils/ui.js';
+import { escapeHTML, textoRating, renderCard, renderPoster, urlDetalle, mostrarCarga, mostrarVacio, mostrarError } from '../utils/ui.js';
 
 const hero = document.getElementById('hero');
 const top = document.getElementById('top-ranking');
@@ -12,13 +12,25 @@ const tieneSinopsis = (p) => !/pendiente de agregar/i.test(p.descripcion ?? '');
 // El badge de calificación solo se muestra si la película ya tiene reseñas
 function renderHero(p) {
   const badge = p.resenas ? `<span class="badge">${textoRating(p)}</span>` : '';
+  // La portada de la destacada se funde con el fondo del hero, sin marco
+  // (el fondo se asigna por código más abajo: la política de seguridad del sitio no permite style="" en el HTML)
+  const fondo = p.imagen ? '<div class="hero__fondo" aria-hidden="true"></div>' : '';
+  const portada = p.imagen
+    ? `<a class="hero__portada" href="${urlDetalle(p.id)}" data-pelicula="${escapeHTML(String(p.id))}" aria-label="Ver ${escapeHTML(p.titulo)}">
+        ${renderPoster(p, { prioridad: true, sizes: '(max-width: 700px) 0px, 320px' })}
+      </a>`
+    : '';
   hero.innerHTML = `
+    ${fondo}
     <div class="hero__content">
       ${badge}
       <h1>${escapeHTML(p.titulo)}</h1>
       <p>${escapeHTML(p.descripcion)}</p>
       <a class="btn" href="pages/listado.html">Explorar catálogo</a>
-    </div>`;
+    </div>
+    ${portada}`;
+  const imagenFondo = hero.querySelector('.hero__fondo');
+  if (imagenFondo) imagenFondo.style.backgroundImage = `url("${p.imagen.replace(/"/g, '%22')}")`;
 }
 
 async function init() {

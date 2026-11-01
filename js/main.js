@@ -17,7 +17,10 @@ function pintarNav() {
   nav.querySelectorAll('[data-sesion]').forEach((el) => el.remove());
   const usuario = getUsuario();
   const enlaces = [];
-  if (usuario) enlaces.push(`<a data-sesion href="${base}proponer.html">Proponer</a>`);
+  if (usuario) {
+    enlaces.push(`<a data-sesion href="${base}mi-lista.html">Mi lista</a>`);
+    enlaces.push(`<a data-sesion href="${base}proponer.html">Proponer</a>`);
+  }
   if (usuario?.role === 'admin') enlaces.push(`<a data-sesion href="${base}admin.html">Administración</a>`);
   enlaces.push(usuario
     ? `<button data-sesion type="button" class="nav__salir" id="salir">Salir (${escapeHTML(usuario.username)})</button>`
@@ -29,6 +32,21 @@ function pintarNav() {
     a.classList.toggle('active', a.getAttribute('href').split('/').pop().split('?')[0] === actual);
   });
 }
+
+// ---------- Barra de búsqueda ----------
+
+// Está en el encabezado de todas las páginas. Fuera del catálogo, al enviar lleva a
+// listado.html?q=...; dentro del catálogo, listado.js filtra mientras se escribe.
+const buscador = document.createElement('form');
+buscador.className = 'buscador';
+buscador.setAttribute('role', 'search');
+buscador.action = `${base}listado.html`;
+buscador.innerHTML = `
+  <label class="sr-only" for="buscar">Buscar películas</label>
+  <svg class="buscador__icono" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+  <input id="buscar" name="q" type="search" placeholder="Buscar películas…" maxlength="100" autocomplete="off">`;
+buscador.querySelector('input').value = new URLSearchParams(location.search).get('q') ?? '';
+header.insertBefore(buscador, nav);
 
 // Botón de menú para pantallas angostas (el CSS lo muestra solo en móvil)
 nav.id = nav.id || 'menu-principal';
@@ -70,7 +88,7 @@ window.addEventListener('storage', (e) => {
   if (e.key !== null && e.key !== CLAVE_SESION) return; // null = se vació todo el almacenamiento
   pintarNav();
   document.dispatchEvent(new CustomEvent('sesion-cambiada'));
-  if (['admin.html', 'proponer.html'].includes(actual)) location.reload();
+  if (['admin.html', 'proponer.html', 'mi-lista.html'].includes(actual)) location.reload();
 });
 
 // ---------- Pie de página ----------
