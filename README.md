@@ -52,7 +52,7 @@ js/
 ├── pages/            # un módulo por pantalla
 └── utils/            # configuración, sesión (auth.js), modales, formularios, trailer y dónde ver, helpers de interfaz
 css/styles.css        # estilos y paleta
-assets/img/           # portadas (JPG y WebP), iconos e imagen para compartir (og.png)
+assets/img/           # portadas (JPG y WebP), iconos e imagen para compartir (og.jpg)
 ```
 
 La sesión (token y usuario) se guarda en `localStorage` con la clave `marisolliflix_sesion`, y el token se envía en `Authorization: Bearer <token>` en las rutas protegidas.
@@ -69,7 +69,7 @@ El servidor publica el frontend con una política de contenido (CSP) estricta, a
 ## Imágenes
 
 - Cada portada vive en tres archivos: `nombre.jpg` (respaldo), `nombre.webp` (400 px) y `nombre-sm.webp` (220 px, para las tarjetas).
-- `og.png` es la imagen que aparece al compartir el enlace (WhatsApp, Discord...). Las páginas la piden como `og.png?v=2`: si se cambia la imagen, hay que subir el número (`?v=3`) en las etiquetas `og:image` para que Cloudflare y las aplicaciones de mensajería la vuelvan a descargar.
+- `og.jpg` es la imagen que aparece al compartir el enlace (WhatsApp, Discord...). Pesa unos 100 KB a propósito: WhatsApp descarta las imágenes de vista previa de más de ~300 KB. Las páginas la piden como `og.jpg?v=3`: si se cambia la imagen, hay que subir el número (`?v=4`) en las etiquetas `og:image` para que Cloudflare y las aplicaciones de mensajería la vuelvan a descargar. WhatsApp guarda la vista previa de cada enlace; para ver una nueva, comparte el enlace con un parámetro distinto (por ejemplo `https://marisolliflix.pamcing.me/?v=4`).
 
 ## Despliegue
 
