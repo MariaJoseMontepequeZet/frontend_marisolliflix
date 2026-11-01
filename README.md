@@ -7,6 +7,7 @@ Interfaz web de **MarisolliFlix**, una app para registrar, calificar y rankear p
 | **Sitio publicado** | https://marisolliflix.pamcing.me |
 | **Repositorio del backend** | https://github.com/MariaJoseMontepequeZet/backend_marisolliflix |
 | **Documentación de la API (Swagger)** | https://marisolliflix.pamcing.me/api/v1/docs |
+| **Video** | [https://marisolliflix.pamcing.me/api/v1/docs](https://drive.google.com/drive/folders/1fWOdx8Gpee_4csEE-WjLwmUCvh51XfC4?usp=drive_link) |
 
 ## Contenido
 
@@ -173,6 +174,7 @@ El sitio pasa por Cloudflare, que guarda en caché el CSS y el JavaScript: despu
 - Una rama por tarea (`feature/hu-XX-descripcion`, `fix/...`, `docs/...`, `chore/...`) y PR hacia `dev` con la plantilla de `.github/pull_request_template.md`.
 - De `dev` a `main` al cerrar cada entrega; el merge a `main` despliega.
 - Historias de usuario y sprints en ClickUp.
+- El documento de planeación Scrum (roles, requerimientos, historias de usuario y sprints) está en [`docs/planeacion-scrum.pdf`](docs/planeacion-scrum.pdf).
 
 ## Equipo y créditos
 
