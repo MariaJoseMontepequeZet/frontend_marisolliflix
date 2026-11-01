@@ -13,7 +13,8 @@ const tieneSinopsis = (p) => !/pendiente de agregar/i.test(p.descripcion ?? '');
 function renderHero(p) {
   const badge = p.resenas ? `<span class="badge">${textoRating(p)}</span>` : '';
   // La portada de la destacada se funde con el fondo del hero, sin marco
-  const fondo = p.imagen ? `<div class="hero__fondo" style="background-image: url('${escapeHTML(p.imagen)}')" aria-hidden="true"></div>` : '';
+  // (el fondo se asigna por código más abajo: la política de seguridad del sitio no permite style="" en el HTML)
+  const fondo = p.imagen ? '<div class="hero__fondo" aria-hidden="true"></div>' : '';
   const portada = p.imagen
     ? `<a class="hero__portada" href="${urlDetalle(p.id)}" data-pelicula="${escapeHTML(String(p.id))}" aria-label="Ver ${escapeHTML(p.titulo)}">
         ${renderPoster(p, { prioridad: true, sizes: '(max-width: 700px) 0px, 320px' })}
@@ -28,6 +29,8 @@ function renderHero(p) {
       <a class="btn" href="pages/listado.html">Explorar catálogo</a>
     </div>
     ${portada}`;
+  const imagenFondo = hero.querySelector('.hero__fondo');
+  if (imagenFondo) imagenFondo.style.backgroundImage = `url("${p.imagen.replace(/"/g, '%22')}")`;
 }
 
 async function init() {
