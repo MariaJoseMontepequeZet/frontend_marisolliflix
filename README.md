@@ -174,6 +174,7 @@ El sitio pasa por Cloudflare, que guarda en caché el CSS y el JavaScript: despu
 - Una rama por tarea (`feature/hu-XX-descripcion`, `fix/...`, `docs/...`, `chore/...`) y PR hacia `dev` con la plantilla de `.github/pull_request_template.md`.
 - De `dev` a `main` al cerrar cada entrega; el merge a `main` despliega.
 - Historias de usuario y sprints en ClickUp.
+- El documento de planeación Scrum (roles, requerimientos, historias de usuario y sprints) está en [`docs/planeacion-scrum.pdf`](docs/planeacion-scrum.pdf).
 
 ## Equipo y créditos
 
