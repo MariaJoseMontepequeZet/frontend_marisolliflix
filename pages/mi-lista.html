@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MarisolliFlix · Mi lista</title>
+  <meta name="description" content="Las películas que guardaste para ver después en MarisolliFlix.">
+  <meta name="theme-color" content="#0c0420">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="../assets/img/favicon.png">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <a class="logo" href="../index.html">MarisolliFlix</a>
+    <nav class="nav">
+      <a href="../index.html">Inicio</a>
+      <a href="listado.html">Películas</a>
+    </nav>
+  </header>
+  <main>
+    <section class="section">
+      <h1>Mi lista</h1>
+      <p class="ayuda">Las películas que guardaste para ver después.</p>
+      <div id="mi-lista" class="grid" aria-live="polite"></div>
+      <nav id="paginacion" class="paginacion" aria-label="Paginación"></nav>
+    </section>
+  </main>
+  <script type="module" src="../js/main.js"></script>
+  <script type="module" src="../js/pages/miLista.js"></script>
+</body>
+</html>

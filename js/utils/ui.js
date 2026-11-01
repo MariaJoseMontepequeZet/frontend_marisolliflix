@@ -5,6 +5,9 @@ export function escapeHTML(texto) {
   return String(texto ?? '').replace(/[&<>"']/g, (c) => ENTIDADES[c]);
 }
 
+// Calificación de IMDb como texto ("8.5"); vacío si la película no la tiene
+export const textoImdb = (p) => (p.imdb == null ? '' : Number(p.imdb).toFixed(1));
+
 export function textoRating(p) {
   return p.resenas ? `★ ${p.rating.toFixed(1)}` : 'Sin reseñas';
 }
@@ -42,7 +45,10 @@ export function renderCard(p) {
         <div class="card__body">
           <h3 class="card__title">${escapeHTML(p.titulo)}</h3>
           <p class="card__meta">${escapeHTML(p.categoria)} · ${escapeHTML(String(p.anio))}</p>
-          <span class="badge">${textoRating(p)}</span>
+          <div class="card__badges">
+            <span class="badge">${textoRating(p)}</span>
+            ${p.imdb == null ? '' : `<span class="badge badge--imdb" title="Calificación en IMDb">IMDb ${textoImdb(p)}</span>`}
+          </div>
         </div>
       </a>
     </article>`;

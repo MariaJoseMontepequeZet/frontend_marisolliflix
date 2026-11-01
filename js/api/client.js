@@ -61,6 +61,9 @@ function aPelicula(m, nombres) {
     estado: m.status,
     anio: m.year,
     imagen: m.imageUrl ?? '',
+    trailer: m.trailerUrl ?? '',
+    streaming: m.streaming ?? [], // [{ platform, url }]
+    imdb: m.imdbRating ?? null, // calificación pública de IMDb (referencia externa)
     resenas: m.stats.reviewCount,
     rating: m.stats.avgRating,
     ranking: m.stats.rankingScore,
@@ -78,9 +81,11 @@ async function conNombres(lista) {
 // Pide al backend las películas aprobadas ya filtradas, ordenadas y paginadas.
 // sort: ranking | popularidad | recientes | titulo | anio
 // Devuelve { peliculas, paginacion } con el nombre de la categoría ya resuelto.
-export async function getPeliculas({ sort = 'recientes', page = 1, limit = CONFIG.PAGE_SIZE, categoriaId } = {}) {
+// q: texto a buscar en el título (opcional)
+export async function getPeliculas({ sort = 'recientes', page = 1, limit = CONFIG.PAGE_SIZE, categoriaId, q } = {}) {
   const params = new URLSearchParams({ sort, page, limit });
   if (categoriaId) params.set('categoryId', categoriaId);
+  if (q) params.set('q', q);
 
   const [{ data, pagination }, categorias] = await Promise.all([
     request(`/movies?${params}`),
@@ -94,7 +99,7 @@ export async function getPeliculas({ sort = 'recientes', page = 1, limit = CONFI
 
 // ---- Detalle y reseñas ----
 // Detalle de una película con sus reseñas. Si hay sesión se envía el token: así llegan
-// `myVote` (tu voto en cada reseña) y se pueden ver las películas propias aún pendientes.
+// `myVote` se pueden ver las películas propias aún pendientes.
 export async function getPelicula(id) {
   const [{ data }, categorias] = await Promise.all([
     request(`/movies/${encodeURIComponent(id)}`, { auth: 'opcional' }),
@@ -102,7 +107,13 @@ export async function getPelicula(id) {
   ]);
   const nombres = new Map(categorias.map((c) => [c.id, c.name]));
   return {
-    pelicula: { ...aPelicula(data, nombres), likes: data.stats.likes, dislikes: data.stats.dislikes, creadaPor: data.createdBy },
+    pelicula: {
+      ...aPelicula(data, nombres),
+      likes: data.stats.likes,
+      dislikes: data.stats.dislikes,
+      creadaPor: data.createdBy,
+      enLista: Boolean(data.inWatchlist),
+    },
     resenas: data.reviews.map((r) => ({
       id: r.id,
       titulo: r.title,
@@ -125,6 +136,14 @@ export const editarResena = (id, { title, rating, comment }) =>
 export const borrarResena = (id) => request(`/reviews/${id}`, { method: 'DELETE', auth: true });
 // type: 'like' | 'dislike'. Repetir el mismo tipo quita el voto.
 export const reaccionar = (id, type) => request(`/reviews/${id}/reaction`, { method: 'POST', body: { type }, auth: true });
+
+// ---- Mi lista ----
+export async function getMiLista({ page = 1, limit = CONFIG.PAGE_SIZE } = {}) {
+  const { data, pagination } = await request(`/watchlist?page=${page}&limit=${limit}`, { auth: true });
+  return { peliculas: await conNombres(data), paginacion: pagination };
+}
+export const agregarALista = (id) => request(`/watchlist/${encodeURIComponent(id)}`, { method: 'POST', auth: true });
+export const quitarDeLista = (id) => request(`/watchlist/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true });
 
 // ---- Sesión ----
 export const login = (email, password) => request('/auth/login', { method: 'POST', body: { email, password } });
