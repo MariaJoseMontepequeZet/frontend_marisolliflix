@@ -51,7 +51,14 @@ manejar(formLogin, async (datos) => {
 });
 
 manejar(formRegistro, async (datos) => {
-  await registrar(datos);
+  // Mismas reglas que el backend: se avisa sin enviar nada si no se cumplen
+  if (!datos.username.trim() || !datos.email.trim() || !datos.password) {
+    throw new Error('Todos los campos son obligatorios.');
+  }
+  if (datos.password.length < 8 || datos.password.length > 72) {
+    throw new Error('La contraseña debe tener entre 8 y 72 caracteres.');
+  }
+  await registrar({ ...datos, username: datos.username.trim(), email: datos.email.trim() });
   // Después de crear la cuenta se inicia sesión sola
   const { token, user } = await login(datos.email, datos.password);
   guardarSesion(token, user);

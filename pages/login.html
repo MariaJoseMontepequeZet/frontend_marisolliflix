@@ -13,7 +13,7 @@
   <meta property="og:title" content="Entrar · MarisolliFlix">
   <meta property="og:description" content="Inicia sesión o crea tu cuenta en MarisolliFlix para reseñar películas y votar reseñas.">
   <meta property="og:url" content="https://marisolliflix.pamcing.me/pages/login.html">
-  <meta property="og:image" content="https://marisolliflix.pamcing.me/assets/img/og.png">
+  <meta property="og:image" content="https://marisolliflix.pamcing.me/assets/img/og.png?v=2">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="../assets/img/favicon.png">
   <link rel="stylesheet" href="../css/styles.css">
@@ -43,7 +43,7 @@
       <form id="form-registro" class="form" method="post" novalidate hidden>
         <label>Nombre de usuario <input type="text" name="username" maxlength="50" autocomplete="username" required></label>
         <label>Correo <input type="email" name="email" autocomplete="email" required></label>
-        <label>Contraseña (8 a 72 caracteres) <input type="password" name="password" autocomplete="new-password" required></label>
+        <label>Contraseña (8 a 72 caracteres) <input type="password" name="password" minlength="8" maxlength="72" autocomplete="new-password" required></label>
         <p class="form__error" role="alert" hidden></p>
         <button class="btn" type="submit">Crear cuenta</button>
       </form>
