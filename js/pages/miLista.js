@@ -1,72 +1,74 @@
-import { getMiLista, quitarDeLista } from '../api/client.js';
-import { getUsuario } from '../utils/auth.js';
-import { avisar } from '../utils/modal.js';
-import { renderCard, mostrarCarga, mostrarVacio, mostrarError } from '../utils/ui.js';
+import { api } from '../api/client.js';
+import { sesion } from '../utils/Sesion.js';
+import { Dialogos } from '../utils/Dialogos.js';
+import { Paginador } from '../utils/Paginador.js';
+import { Tarjetas, Estados } from '../utils/ui.js';
 
-const grid = document.getElementById('mi-lista');
-const paginacion = document.getElementById('paginacion');
-let pagina = 1;
+// "Mi lista": las películas que el usuario guardó para ver después
+class PaginaMiLista {
+  #grid = document.getElementById('mi-lista');
+  #paginacion = document.getElementById('paginacion');
+  #pagina = 1;
 
-function renderPaginacion({ page, pages }) {
-  paginacion.innerHTML = pages <= 1 ? '' : `
-    <button class="btn" data-dir="-1" ${page === 1 ? 'disabled' : ''}>Anterior</button>
-    <span>Página ${page} de ${pages}</span>
-    <button class="btn" data-dir="1" ${page === pages ? 'disabled' : ''}>Siguiente</button>`;
-}
-
-const tarjeta = (p) => `
-  <div class="lista-item">
-    ${renderCard(p)}
-    <button type="button" class="btn btn--sec btn--chico" data-quitar="${p.id}">Quitar de mi lista</button>
-  </div>`;
-
-async function cargar() {
-  mostrarCarga(grid, 6);
-  paginacion.innerHTML = '';
-  try {
-    const { peliculas, paginacion: pag } = await getMiLista({ page: pagina });
-    if (!peliculas.length && pagina > 1) {
-      pagina -= 1;
-      return cargar();
+  iniciar() {
+    if (!sesion.usuario) {
+      location.href = `login.html?volver=${encodeURIComponent(location.pathname)}`;
+      return;
     }
-    if (!peliculas.length) {
-      mostrarVacio(grid, 'Todavía no guardas películas. Abre una del catálogo y pulsa "+ Mi lista".');
-      return undefined;
+    this.#grid.addEventListener('click', (e) => this.#quitar(e));
+    new Paginador(this.#paginacion, (dir) => {
+      this.#pagina += dir;
+      this.#cargar();
+      window.scrollTo({ top: 0 });
+    });
+    document.addEventListener('pelicula-cambiada', () => this.#cargar());
+    this.#cargar();
+  }
+
+  #tarjeta(p) {
+    return `
+      <div class="lista-item">
+        ${Tarjetas.card(p)}
+        <button type="button" class="btn btn--sec btn--chico" data-quitar="${p.id}">Quitar de mi lista</button>
+      </div>`;
+  }
+
+  async #cargar() {
+    Estados.cargando(this.#grid, 6);
+    this.#paginacion.innerHTML = '';
+    try {
+      const { peliculas, paginacion } = await api.lista.listar({ page: this.#pagina });
+      // Si se quitó la última de la página, se retrocede una
+      if (!peliculas.length && this.#pagina > 1) {
+        this.#pagina -= 1;
+        await this.#cargar();
+        return;
+      }
+      if (!peliculas.length) {
+        Estados.vacio(this.#grid, 'Todavía no guardas películas. Abre una del catálogo y pulsa "+ Mi lista".');
+        return;
+      }
+      this.#grid.innerHTML = peliculas.map((p) => this.#tarjeta(p)).join('');
+      this.#grid.removeAttribute('aria-busy');
+      this.#paginacion.innerHTML = Paginador.html(paginacion);
+    } catch (e) {
+      Estados.error(this.#grid, e.message);
     }
-    grid.innerHTML = peliculas.map(tarjeta).join('');
-    grid.removeAttribute('aria-busy');
-    renderPaginacion(pag);
-  } catch (e) {
-    mostrarError(grid, e.message);
   }
-  return undefined;
+
+  async #quitar(e) {
+    const boton = e.target.closest('[data-quitar]');
+    if (!boton) return;
+    boton.disabled = true;
+    try {
+      await api.lista.quitar(boton.dataset.quitar);
+      Dialogos.avisar('Quitada de tu lista.');
+      this.#cargar();
+    } catch (err) {
+      Dialogos.avisar(err.message, 'error');
+      boton.disabled = false;
+    }
+  }
 }
 
-grid.addEventListener('click', async (e) => {
-  const boton = e.target.closest('[data-quitar]');
-  if (!boton) return;
-  boton.disabled = true;
-  try {
-    await quitarDeLista(boton.dataset.quitar);
-    avisar('Quitada de tu lista.');
-    cargar();
-  } catch (err) {
-    avisar(err.message, 'error');
-    boton.disabled = false;
-  }
-});
-
-paginacion.addEventListener('click', (e) => {
-  const dir = e.target.dataset.dir;
-  if (!dir) return;
-  pagina += Number(dir);
-  cargar();
-  window.scrollTo({ top: 0 });
-});
-
-if (!getUsuario()) {
-  location.href = `login.html?volver=${encodeURIComponent(location.pathname)}`;
-} else {
-  cargar();
-  document.addEventListener('pelicula-cambiada', cargar);
-}
+new PaginaMiLista().iniciar();
