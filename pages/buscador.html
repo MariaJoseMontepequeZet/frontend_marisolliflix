@@ -1,29 +1,52 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador avanzado | MarisolliFlix</title>
-    <link rel="stylesheet" href="../css/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MarisolliFlix · Buscador avanzado</title>
+  <meta name="description" content="Busca películas por categoría, calificación en estrellas y año de estreno.">
+  <meta name="theme-color" content="#0c0420">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="MarisolliFlix">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:title" content="Buscador avanzado · MarisolliFlix">
+  <meta property="og:description" content="Busca películas por categoría, calificación en estrellas y año de estreno.">
+  <meta property="og:url" content="https://marisolliflix.pamcing.me/pages/buscador.html">
+  <meta property="og:image" content="https://marisolliflix.pamcing.me/assets/img/og.jpg?v=3">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="../assets/img/favicon.png">
+  <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
-    <main>
-        <section class="buscador-avanzado">
-            <h2>Buscador avanzado</h2>
-            <form id="formBuscar">
-                <select id="categoria">
-                    <option value="">Todas las categorías</option>
-                </select>
-                <input type="number" id="minRating" placeholder="Rating mín" min="0" max="5" step="0.5">
-                <input type="number" id="maxRating" placeholder="Rating máx" min="0" max="5" step="0.5">
-                <input type="number" id="anioDesde" placeholder="Año desde" min="1888" max="2100">
-                <input type="number" id="anioHasta" placeholder="Año hasta" min="1888" max="2100">
-                <button type="submit" class="btn">Buscar</button>
-            </form>
-            <p id="mensaje"></p>
-            <div id="resultados"></div>
-        </section>
-    </main>
-    <script src="../js/pages/buscador.js"></script>
+  <header class="header">
+    <a class="logo" href="../index.html">MarisolliFlix</a>
+    <nav class="nav">
+      <a href="../index.html">Inicio</a>
+      <a href="listado.html">Películas</a>
+    </nav>
+  </header>
+  <main>
+    <section class="buscador-avanzado">
+      <h1>Buscador avanzado</h1>
+      <form id="formBuscar" novalidate>
+        <select id="categoria" aria-label="Categoría">
+          <option value="">Todas las categorías</option>
+        </select>
+        <input type="number" id="minRating" placeholder="Estrellas mín (0 a 5)" aria-label="Calificación mínima" min="0" max="5" step="0.5">
+        <input type="number" id="maxRating" placeholder="Estrellas máx (0 a 5)" aria-label="Calificación máxima" min="0" max="5" step="0.5">
+        <input type="number" id="anioDesde" placeholder="Año desde" aria-label="Año desde" min="1888" max="2100">
+        <input type="number" id="anioHasta" placeholder="Año hasta" aria-label="Año hasta" min="1888" max="2100">
+        <button type="submit" class="btn">Buscar</button>
+      </form>
+      <p id="mensaje" role="status"></p>
+      <div id="resultados"></div>
+    </section>
+  </main>
+  <script type="module" src="../js/main.js"></script>
+  <script type="module" src="../js/pages/buscador.js"></script>
 </body>
 </html>

@@ -278,7 +278,7 @@ body:has(dialog[open]) { overflow: hidden; }
   .card:hover { transform: none; }
 }
 
-/* Examen - Buscador avanzado */
+/* Buscador avanzado */
 .buscador-avanzado { padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
 .buscador-avanzado h2 { margin-bottom: 1rem; }
 
@@ -292,7 +292,7 @@ body:has(dialog[open]) { overflow: hidden; }
 #resultados { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
 .card-pelicula { background: var(--surface); border: 1px solid transparent; border-radius: var(--radius); padding: 1rem; display: grid; gap: .35rem; transition: transform .15s; }
 .card-pelicula:hover { transform: translateY(-4px); border-color: var(--violeta); box-shadow: 0 8px 24px rgba(141, 41, 238, .35); }
-.card-pelicula h3 { font-size: 1rem; }
+.card-pelicula h2 { font-size: 1rem; }
 .card-pelicula p { color: var(--muted); font-size: .9rem; }
 .card-pelicula p:last-child { color: var(--estrella); font-weight: 700; }
 

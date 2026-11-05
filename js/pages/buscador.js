@@ -1,76 +1,77 @@
-const API = 'http://localhost:3000/api/v1'; // tu API usa /api/v1
+import { api } from '../api/client.js';
+import { escapeHTML } from '../utils/ui.js';
 
-const form = document.getElementById('formBuscar');
-const contenedor = document.getElementById('resultados');
-const mensaje = document.getElementById('mensaje');
+// Buscador avanzado: filtra por categoría, calificación en estrellas (0 a 5) y año de estreno.
+// El backend hace la búsqueda; aquí solo se arman los parámetros y se muestran los resultados.
+class PaginaBuscador {
+  static CAMPOS = ['categoria', 'minRating', 'maxRating', 'anioDesde', 'anioHasta'];
 
-// Llena el select con las categorías existentes
-const cargarCategorias = async () => {
+  #form = document.getElementById('formBuscar');
+  #resultados = document.getElementById('resultados');
+  #mensaje = document.getElementById('mensaje');
+
+  iniciar() {
+    this.#form.addEventListener('submit', (e) => this.#buscar(e));
+    this.#cargarCategorias();
+  }
+
+  // Llena el select con las categorías existentes
+  async #cargarCategorias() {
     try {
-        const res = await fetch(`${API}/categories`); // tus rutas están en inglés
-        const data = await res.json();
-        const select = document.getElementById('categoria');
-        const lista = Array.isArray(data) ? data : (data.data || data.categorias || []); // tu formato es { status, data }
-        lista.forEach(cat => {
-            const nombre = cat.name || cat.nombre; // la columna puede llamarse name
-            const opt = document.createElement('option');
-            opt.value = nombre;
-            opt.textContent = nombre;
-            select.appendChild(opt);
-        });
+      const categorias = await api.categorias.listar();
+      const select = document.getElementById('categoria');
+      select.insertAdjacentHTML('beforeend', categorias
+        .map((c) => `<option value="${escapeHTML(c.name)}">${escapeHTML(c.name)}</option>`)
+        .join(''));
     } catch {
-        console.warn('No se pudieron cargar categorías');
+      // Sin categorías el buscador igual funciona, solo sin ese filtro
     }
-};
+  }
 
-const renderizar = (peliculas) => {
-    contenedor.innerHTML = '';
-    if (!peliculas.length) {
-        mensaje.textContent = 'No se encontraron películas con esos filtros.';
-        return;
-    }
-    mensaje.textContent = `${peliculas.length} resultado(s)`;
-
-    peliculas.forEach(p => {
-        const card = document.createElement('article');
-        card.className = 'card-pelicula';
-
-        const titulo = document.createElement('h3');
-        titulo.textContent = p.titulo;
-
-        const info = document.createElement('p');
-        info.textContent = `${p.categoria} · ${p.anio}`;
-
-        const calif = Number(p.calificacion); // MySQL devuelve el ROUND como texto
-        const estrellas = Math.round(calif);
-        const rating = document.createElement('p');
-        rating.textContent = `${'★'.repeat(estrellas)}${'☆'.repeat(5 - estrellas)} (${calif})`;
-
-        card.append(titulo, info, rating);
-        contenedor.appendChild(card);
+  // Solo se mandan los filtros que tienen valor
+  #leerFiltros() {
+    const filtros = {};
+    PaginaBuscador.CAMPOS.forEach((id) => {
+      const valor = document.getElementById(id).value.trim();
+      if (valor) filtros[id] = valor;
     });
-};
+    return filtros;
+  }
 
-form.addEventListener('submit', async (e) => {
+  async #buscar(e) {
     e.preventDefault();
-    const params = new URLSearchParams();
-    ['categoria', 'minRating', 'maxRating', 'anioDesde', 'anioHasta'].forEach(id => {
-        const valor = document.getElementById(id).value.trim();
-        if (valor) params.append(id, valor);
-    });
-
+    this.#mensaje.textContent = 'Buscando…';
     try {
-        const res = await fetch(`${API}/movies/search?${params}`); // tu ruta nueva
-        const data = await res.json();
-        if (!res.ok) {
-            mensaje.textContent = data.mensaje || data.errores?.map(e => e.msg).join(', ') || 'Error en la búsqueda';
-            contenedor.innerHTML = '';
-            return;
-        }
-        renderizar(data.data); // el controller devuelve { status, total, data }
-    } catch {
-        mensaje.textContent = 'Error de conexión con el servidor.';
+      const peliculas = await api.peliculas.buscar(this.#leerFiltros());
+      this.#pintar(peliculas);
+    } catch (err) {
+      this.#resultados.innerHTML = '';
+      this.#mensaje.textContent = err.message;
     }
-});
+  }
 
-cargarCategorias();
+  // Cada película muestra título, categoría, año y calificación
+  #pintar(peliculas) {
+    if (!peliculas.length) {
+      this.#resultados.innerHTML = '';
+      this.#mensaje.textContent = 'No se encontraron películas con esos filtros.';
+      return;
+    }
+    this.#mensaje.textContent = `${peliculas.length} resultado(s)`;
+    this.#resultados.innerHTML = peliculas.map((p) => `
+      <article class="card-pelicula">
+        <h2>${escapeHTML(p.titulo)}</h2>
+        <p>${escapeHTML(p.categoria)} · ${escapeHTML(String(p.anio))}</p>
+        <p>${this.#estrellas(p.calificacion)}</p>
+      </article>`).join('');
+  }
+
+  // 0 significa que todavía no tiene reseñas
+  #estrellas(calificacion) {
+    if (!calificacion) return 'Sin reseñas';
+    const llenas = Math.round(calificacion);
+    return `${'★'.repeat(llenas)}${'☆'.repeat(5 - llenas)} (${calificacion})`;
+  }
+}
+
+new PaginaBuscador().iniciar();
