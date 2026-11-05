@@ -32,7 +32,7 @@ Interfaz web de **MarisolliFlix**, una app para registrar, calificar y rankear p
 |---|---|
 | **Visitante** | Ver el inicio (película destacada, Top 5 por ranking y más populares), buscar por título, explorar el listado con filtro por categoría, orden y paginación, y abrir el detalle de cada película con su sinopsis, trailer, plataformas, nota de IMDb y reseñas. Crear una cuenta o entrar. |
 | **Usuario** (con sesión) | Todo lo anterior, más: escribir, editar y eliminar su reseña (calificación de 1 a 10), dar like o dislike a las de otros (no a la propia), guardar películas en **Mi lista** y proponer películas nuevas, que quedan pendientes de aprobación. |
-| **Administrador** | Todo lo anterior, más el **panel de administración**: crear, editar y borrar categorías, editar y eliminar películas, y aprobar o rechazar las propuestas pendientes. |
+| **Administrador** | Todo lo anterior, más el **panel de administración**: crear, editar y borrar categorías, editar y eliminar películas, aprobar o rechazar las propuestas pendientes y **gestionar usuarios**: buscarlos, crear usuarios normales o administradores, cambiar su rol, editarlos y eliminarlos. |
 
 El **orden**, el **filtro por categoría**, la **búsqueda** y la **paginación** los resuelve el backend (`?sort=`, `?categoryId=`, `?q=`, `?page=`, `?limit=`); el frontend solo los pide y los muestra. Los mensajes de validación o error que devuelve el backend se muestran en pantalla.
 
@@ -77,21 +77,28 @@ Abre http://localhost:5500. El puerto debe coincidir con `FRONT_URL` del backend
 index.html                # inicio
 pages/                    # listado, detalle, login, mi-lista, proponer, admin
 js/
-├── main.js               # menú, buscador, pie de página y apertura de la ventana de película
-├── api/client.js         # cliente de la API (el único lugar que llama a fetch)
-├── pages/                # un módulo por pantalla (inicio, listado, detalle, login, miLista, proponer, admin)
+├── main.js               # arranca lo común a todas las páginas
+├── layout/               # Encabezado (menú y buscador), PiePagina y EnlacesPelicula
+├── api/
+│   ├── HttpClient.js     # el único lugar que llama a fetch
+│   └── client.js         # una clase por grupo de rutas (AuthApi, PeliculasApi, UsuariosApi...)
+├── pages/                # una clase por pantalla (PaginaInicio, PaginaListado, PaginaAdmin...)
+├── admin/                # Panel (base) y un panel por pestaña: categorías, películas, pendientes y usuarios
 └── utils/
     ├── config.js         # URL de la API y tamaños de página
-    ├── auth.js           # sesión: guardar, leer y cerrar
-    ├── ui.js             # tarjetas, portadas, mensajes de carga, vacío y error, escapeHTML
-    ├── modal.js          # ventanas de confirmación y avisos
-    ├── ventanaPelicula.js, detallePelicula.js  # detalle de película (ventana y página)
-    ├── streaming.js      # trailer y "dónde ver"
-    └── formPelicula.js   # formulario para proponer y editar películas
+    ├── Sesion.js         # sesión: guardar, leer y cerrar
+    ├── ui.js             # Texto, Tarjetas (portadas y cards) y Estados (cargando, vacío, error)
+    ├── Dialogos.js       # ventanas de confirmación, formularios y avisos
+    ├── Paginador.js      # botones Anterior y Siguiente
+    ├── VentanaPelicula.js, DetallePelicula.js  # detalle de película (ventana y página)
+    ├── Streaming.js      # trailer y "dónde ver"
+    └── FormularioPelicula.js, FormularioResena.js  # formularios y su validación
 css/styles.css            # estilos y paleta
 assets/img/               # portadas (JPG y WebP), iconos e imagen para compartir (og.jpg)
 .github/workflows/        # despliegue automático
 ```
+
+Todo el JavaScript está hecho con clases (POO): cada clase tiene una sola responsabilidad (SOLID), las dependencias se reciben por el constructor (`PeliculasApi` recibe el `HttpClient`) y una pestaña nueva del panel de administración solo necesita heredar de `Panel`.
 
 ## Cómo consume la API
 
@@ -103,6 +110,7 @@ Todas las llamadas salen de `js/api/client.js`, que arma la URL, agrega el token
 | Detalle, con reseñas e `inWatchlist` | `GET /movies/:id` |
 | Categorías (filtro y admin) | `GET /categories` · `POST`, `PUT`, `DELETE /categories/:id` |
 | Registro y login | `POST /auth/register` · `POST /auth/login` |
+| Administración de usuarios | `GET`, `POST /users` · `GET`, `PUT`, `DELETE /users/:id` |
 | Reseñas | `POST /movies/:id/reviews` · `PUT`, `DELETE /reviews/:id` |
 | Like y dislike | `POST /reviews/:id/reaction` |
 | Mi lista | `GET /watchlist` · `POST`, `DELETE /watchlist/:movieId` |
@@ -154,7 +162,7 @@ Con el backend corriendo y datos cargados:
 5. **Reseñas:** escribir, editar y borrar la propia; dar like y dislike a otra (a la propia no deja).
 6. **Mi lista:** guardar una película y verla en su página.
 7. **Proponer:** enviar una película; queda pendiente.
-8. **Administración:** con el administrador, aprobar la propuesta, y crear una categoría.
+8. **Administración:** con el administrador, aprobar la propuesta, crear una categoría y, en la pestaña **Usuarios**, crear un usuario y un administrador, cambiar un rol y eliminar un usuario (en tu propia fila no aparece Eliminar).
 9. **Móvil:** reducir la ventana a 375 px: menú hamburguesa, sin desbordes.
 
 ## Despliegue

@@ -39,6 +39,7 @@
           <button class="tab active" role="tab" data-tab="categorias" aria-selected="true">Categorías</button>
           <button class="tab" role="tab" data-tab="peliculas" aria-selected="false">Películas</button>
           <button class="tab" role="tab" data-tab="pendientes" aria-selected="false">Pendientes <span id="contador-pendientes" class="badge" hidden></span></button>
+          <button class="tab" role="tab" data-tab="usuarios" aria-selected="false">Usuarios</button>
         </div>
 
         <div id="tab-categorias" role="tabpanel">
@@ -63,6 +64,23 @@
 
         <div id="tab-pendientes" role="tabpanel" hidden>
           <div id="lista-pendientes" data-lista="pendientes"></div>
+        </div>
+
+        <div id="tab-usuarios" role="tabpanel" hidden>
+          <div class="toolbar">
+            <button class="btn" data-accion="nuevo-user">Nuevo usuario</button>
+            <label>Buscar
+              <input id="buscar-usuario" type="search" placeholder="Nombre o correo" maxlength="100" autocomplete="off">
+            </label>
+            <label>Rol
+              <select id="filtro-rol">
+                <option value="">Todos</option>
+                <option value="user">Usuarios</option>
+                <option value="admin">Administradores</option>
+              </select>
+            </label>
+          </div>
+          <div id="lista-usuarios" data-lista="usuarios"></div>
         </div>
       </div>
     </section>

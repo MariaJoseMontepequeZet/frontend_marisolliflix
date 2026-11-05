@@ -1,185 +1,268 @@
 import { CONFIG } from '../utils/config.js';
-import { getToken, cerrarSesion } from '../utils/auth.js';
+import { sesion } from '../utils/Sesion.js';
+import { HttpClient } from './HttpClient.js';
 
-// auth: true envía el token de la sesión y exige tenerla; auth: 'opcional' lo envía solo
-// si hay sesión (así el backend sabe quién mira). Si el backend responde 401 con sesión
-// iniciada, el token venció o ya no sirve: se cierra la sesión.
-async function request(path, { method = 'GET', body, auth = false } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
-  const token = auth ? getToken() : null;
-  if (auth === true && !token) throw new Error('Debes iniciar sesión.');
-  if (token) headers.Authorization = `Bearer ${token}`;
+// Cada clase de este archivo habla con un grupo de rutas del backend.
+// Todas reciben el HttpClient por el constructor, así ninguna sabe cómo se hace la petición.
 
-  let res;
-  try {
-    res = await fetch(`${CONFIG.API_URL}${path}`, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-  } catch {
-    throw new Error('No se pudo conectar con el servidor.');
+class AuthApi {
+  #http;
+
+  constructor(http) {
+    this.#http = http;
   }
-  if (res.status === 204) return null;
-  if (!res.ok) {
-    // El backend responde { status: 'error', message, errors? }
-    const cuerpo = await res.json().catch(() => ({}));
-    if (res.status === 401 && token) {
-      cerrarSesion();
-      throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+
+  login(email, password) {
+    return this.#http.pedir('/auth/login', { method: 'POST', body: { email, password } });
+  }
+
+  registrar({ username, email, password }) {
+    return this.#http.pedir('/auth/register', { method: 'POST', body: { username, email, password } });
+  }
+}
+
+class CategoriasApi {
+  #http;
+  // Las categorías casi no cambian: se piden una sola vez por página.
+  #pendientes = null;
+
+  constructor(http) {
+    this.#http = http;
+  }
+
+  listar() {
+    if (!this.#pendientes) {
+      this.#pendientes = this.#http.pedir('/categories')
+        .then(({ data }) => data)
+        .catch((error) => {
+          this.#pendientes = null; // permite reintentar si falló
+          throw error;
+        });
     }
-    const detalle = (cuerpo.errors ?? []).map((e) => e.message).join(' · ');
-    throw new Error([cuerpo.message ?? `Error ${res.status}`, detalle].filter(Boolean).join(': '));
+    return this.#pendientes;
   }
-  return res.json();
-}
 
-// Las categorías casi no cambian: se piden una sola vez por página.
-let categoriasPendientes = null;
-
-export function getCategorias() {
-  if (!categoriasPendientes) {
-    categoriasPendientes = request('/categories')
-      .then(({ data }) => data)
-      .catch((e) => {
-        categoriasPendientes = null; // permite reintentar si falló
-        throw e;
-      });
+  crear(name) {
+    return this.#cambiar('/categories', { method: 'POST', body: { name } });
   }
-  return categoriasPendientes;
+
+  editar(id, name) {
+    return this.#cambiar(`/categories/${id}`, { method: 'PUT', body: { name } });
+  }
+
+  borrar(id) {
+    return this.#cambiar(`/categories/${id}`, { method: 'DELETE' });
+  }
+
+  // Después de cambiarlas se descarta la copia guardada para que la lista se vuelva a pedir.
+  async #cambiar(ruta, opciones) {
+    const respuesta = await this.#http.pedir(ruta, { ...opciones, auth: true });
+    this.#pendientes = null;
+    return respuesta;
+  }
 }
 
-// Convierte una película de la API al formato del frontend
-function aPelicula(m, nombres) {
-  return {
-    id: m.id,
-    titulo: m.title,
-    descripcion: m.description,
-    categoriaId: m.categoryId,
-    categoria: nombres.get(m.categoryId) ?? 'Sin categoría',
-    tipo: m.type,
-    estado: m.status,
-    anio: m.year,
-    imagen: m.imageUrl ?? '',
-    trailer: m.trailerUrl ?? '',
-    streaming: m.streaming ?? [], // [{ platform, url }]
-    imdb: m.imdbRating ?? null, // calificación pública de IMDb (referencia externa)
-    resenas: m.stats.reviewCount,
-    rating: m.stats.avgRating,
-    ranking: m.stats.rankingScore,
-    likes: m.stats.likes,
-    creada: m.createdAt,
-  };
+class PeliculasApi {
+  #http;
+  #categorias;
+
+  constructor(http, categorias) {
+    this.#http = http;
+    this.#categorias = categorias;
+  }
+
+  // Pide al backend las películas aprobadas ya filtradas, ordenadas y paginadas.
+  // sort: ranking | popularidad | recientes | titulo | anio | internet
+  // Devuelve { peliculas, paginacion } con el nombre de la categoría ya resuelto.
+  async listar({ sort = 'recientes', page = 1, limit = CONFIG.PAGE_SIZE, categoriaId, q } = {}) {
+    const params = new URLSearchParams({ sort, page, limit });
+    if (categoriaId) params.set('categoryId', categoriaId);
+    if (q) params.set('q', q);
+    const { data, pagination } = await this.#http.pedir(`/movies?${params}`);
+    return { peliculas: await this.conNombres(data), paginacion: pagination };
+  }
+
+  // Detalle de una película con sus reseñas. Si hay sesión se envía el token: así llega
+  // `myVote` y se pueden ver las películas propias aún pendientes.
+  async obtener(id) {
+    const [{ data }, nombres] = await Promise.all([
+      this.#http.pedir(`/movies/${encodeURIComponent(id)}`, { auth: 'opcional' }),
+      this.#nombresDeCategorias(),
+    ]);
+    return {
+      pelicula: {
+        ...this.#aPelicula(data, nombres),
+        dislikes: data.stats.dislikes,
+        creadaPor: data.createdBy,
+        enLista: Boolean(data.inWatchlist),
+      },
+      resenas: data.reviews.map((r) => ({
+        id: r.id,
+        titulo: r.title,
+        rating: r.rating,
+        comentario: r.comment,
+        autor: r.author,
+        likes: r.likes,
+        dislikes: r.dislikes,
+        miVoto: r.myVote,
+        creada: r.createdAt,
+        editada: r.updatedAt,
+      })),
+    };
+  }
+
+  proponer(datos) {
+    return this.#http.pedir('/movies', { method: 'POST', body: datos, auth: true });
+  }
+
+  // Solo admin: todas las películas, con filtro opcional por estado
+  async listarAdmin({ page = 1, limit = 10, status } = {}) {
+    const params = new URLSearchParams({ page, limit, sort: 'recientes' });
+    if (status) params.set('status', status);
+    const { data, pagination } = await this.#http.pedir(`/movies?${params}`, { auth: true });
+    return { peliculas: await this.conNombres(data), paginacion: pagination };
+  }
+
+  // Solo admin: propuestas por revisar, las más viejas primero
+  async pendientes({ page = 1, limit = 10 } = {}) {
+    const { data, pagination } = await this.#http.pedir(`/movies/pending?page=${page}&limit=${limit}`, { auth: true });
+    return { peliculas: await this.conNombres(data), paginacion: pagination };
+  }
+
+  editar(id, datos) {
+    return this.#http.pedir(`/movies/${id}`, { method: 'PUT', body: datos, auth: true });
+  }
+
+  cambiarEstado(id, status) {
+    return this.#http.pedir(`/movies/${id}/status`, { method: 'PATCH', body: { status }, auth: true });
+  }
+
+  borrar(id) {
+    return this.#http.pedir(`/movies/${id}`, { method: 'DELETE', auth: true });
+  }
+
+  // Convierte una lista de películas de la API al formato del frontend
+  async conNombres(lista) {
+    const nombres = await this.#nombresDeCategorias();
+    return lista.map((m) => this.#aPelicula(m, nombres));
+  }
+
+  async #nombresDeCategorias() {
+    const categorias = await this.#categorias.listar();
+    return new Map(categorias.map((c) => [c.id, c.name]));
+  }
+
+  #aPelicula(m, nombres) {
+    return {
+      id: m.id,
+      titulo: m.title,
+      descripcion: m.description,
+      categoriaId: m.categoryId,
+      categoria: nombres.get(m.categoryId) ?? 'Sin categoría',
+      tipo: m.type,
+      estado: m.status,
+      anio: m.year,
+      imagen: m.imageUrl ?? '',
+      trailer: m.trailerUrl ?? '',
+      streaming: m.streaming ?? [], // [{ platform, url }]
+      imdb: m.imdbRating ?? null, // calificación pública de IMDb (referencia externa)
+      resenas: m.stats.reviewCount,
+      rating: m.stats.avgRating,
+      ranking: m.stats.rankingScore,
+      likes: m.stats.likes,
+      creada: m.createdAt,
+    };
+  }
 }
 
-async function conNombres(lista) {
-  const categorias = await getCategorias();
-  const nombres = new Map(categorias.map((c) => [c.id, c.name]));
-  return lista.map((m) => aPelicula(m, nombres));
+class ResenasApi {
+  #http;
+
+  constructor(http) {
+    this.#http = http;
+  }
+
+  crear(peliculaId, { title, rating, comment }) {
+    return this.#http.pedir(`/movies/${peliculaId}/reviews`, { method: 'POST', body: { title, rating, comment }, auth: true });
+  }
+
+  editar(id, { title, rating, comment }) {
+    return this.#http.pedir(`/reviews/${id}`, { method: 'PUT', body: { title, rating, comment }, auth: true });
+  }
+
+  borrar(id) {
+    return this.#http.pedir(`/reviews/${id}`, { method: 'DELETE', auth: true });
+  }
+
+  // type: 'like' | 'dislike'. Repetir el mismo tipo quita el voto.
+  reaccionar(id, type) {
+    return this.#http.pedir(`/reviews/${id}/reaction`, { method: 'POST', body: { type }, auth: true });
+  }
 }
 
-// Pide al backend las películas aprobadas ya filtradas, ordenadas y paginadas.
-// sort: ranking | popularidad | recientes | titulo | anio
-// Devuelve { peliculas, paginacion } con el nombre de la categoría ya resuelto.
-// q: texto a buscar en el título (opcional)
-export async function getPeliculas({ sort = 'recientes', page = 1, limit = CONFIG.PAGE_SIZE, categoriaId, q } = {}) {
-  const params = new URLSearchParams({ sort, page, limit });
-  if (categoriaId) params.set('categoryId', categoriaId);
-  if (q) params.set('q', q);
+class ListaApi {
+  #http;
+  #peliculas;
 
-  const [{ data, pagination }, categorias] = await Promise.all([
-    request(`/movies?${params}`),
-    getCategorias(),
-  ]);
-  const nombres = new Map(categorias.map((c) => [c.id, c.name]));
+  constructor(http, peliculas) {
+    this.#http = http;
+    this.#peliculas = peliculas;
+  }
 
-  const peliculas = data.map((m) => aPelicula(m, nombres));
-  return { peliculas, paginacion: pagination };
+  async listar({ page = 1, limit = CONFIG.PAGE_SIZE } = {}) {
+    const { data, pagination } = await this.#http.pedir(`/watchlist?page=${page}&limit=${limit}`, { auth: true });
+    return { peliculas: await this.#peliculas.conNombres(data), paginacion: pagination };
+  }
+
+  agregar(id) {
+    return this.#http.pedir(`/watchlist/${encodeURIComponent(id)}`, { method: 'POST', auth: true });
+  }
+
+  quitar(id) {
+    return this.#http.pedir(`/watchlist/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true });
+  }
 }
 
-// ---- Detalle y reseñas ----
-// Detalle de una película con sus reseñas. Si hay sesión se envía el token: así llegan
-// `myVote` se pueden ver las películas propias aún pendientes.
-export async function getPelicula(id) {
-  const [{ data }, categorias] = await Promise.all([
-    request(`/movies/${encodeURIComponent(id)}`, { auth: 'opcional' }),
-    getCategorias(),
-  ]);
-  const nombres = new Map(categorias.map((c) => [c.id, c.name]));
-  return {
-    pelicula: {
-      ...aPelicula(data, nombres),
-      likes: data.stats.likes,
-      dislikes: data.stats.dislikes,
-      creadaPor: data.createdBy,
-      enLista: Boolean(data.inWatchlist),
-    },
-    resenas: data.reviews.map((r) => ({
-      id: r.id,
-      titulo: r.title,
-      rating: r.rating,
-      comentario: r.comment,
-      autor: r.author,
-      likes: r.likes,
-      dislikes: r.dislikes,
-      miVoto: r.myVote,
-      creada: r.createdAt,
-      editada: r.updatedAt,
-    })),
-  };
+// Solo admin: usuarios normales y administradores
+class UsuariosApi {
+  #http;
+
+  constructor(http) {
+    this.#http = http;
+  }
+
+  // Devuelve { usuarios, paginacion }; q busca en nombre y correo, role filtra por rol
+  async listar({ page = 1, limit = 10, q, role } = {}) {
+    const params = new URLSearchParams({ page, limit });
+    if (q) params.set('q', q);
+    if (role) params.set('role', role);
+    const { data, pagination } = await this.#http.pedir(`/users?${params}`, { auth: true });
+    return { usuarios: data, paginacion: pagination };
+  }
+
+  crear({ username, email, password, role }) {
+    return this.#http.pedir('/users', { method: 'POST', body: { username, email, password, role }, auth: true });
+  }
+
+  editar(id, cambios) {
+    return this.#http.pedir(`/users/${id}`, { method: 'PUT', body: cambios, auth: true });
+  }
+
+  borrar(id) {
+    return this.#http.pedir(`/users/${id}`, { method: 'DELETE', auth: true });
+  }
 }
 
-export const crearResena = (peliculaId, { title, rating, comment }) =>
-  request(`/movies/${peliculaId}/reviews`, { method: 'POST', body: { title, rating, comment }, auth: true });
-export const editarResena = (id, { title, rating, comment }) =>
-  request(`/reviews/${id}`, { method: 'PUT', body: { title, rating, comment }, auth: true });
-export const borrarResena = (id) => request(`/reviews/${id}`, { method: 'DELETE', auth: true });
-// type: 'like' | 'dislike'. Repetir el mismo tipo quita el voto.
-export const reaccionar = (id, type) => request(`/reviews/${id}/reaction`, { method: 'POST', body: { type }, auth: true });
+// Se arma una sola vez: las páginas importan `api` y usan el grupo que necesitan
+const http = new HttpClient(CONFIG.API_URL, sesion);
+const categorias = new CategoriasApi(http);
+const peliculas = new PeliculasApi(http, categorias);
 
-// ---- Mi lista ----
-export async function getMiLista({ page = 1, limit = CONFIG.PAGE_SIZE } = {}) {
-  const { data, pagination } = await request(`/watchlist?page=${page}&limit=${limit}`, { auth: true });
-  return { peliculas: await conNombres(data), paginacion: pagination };
-}
-export const agregarALista = (id) => request(`/watchlist/${encodeURIComponent(id)}`, { method: 'POST', auth: true });
-export const quitarDeLista = (id) => request(`/watchlist/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true });
-
-// ---- Sesión ----
-export const login = (email, password) => request('/auth/login', { method: 'POST', body: { email, password } });
-export const registrar = ({ username, email, password }) =>
-  request('/auth/register', { method: 'POST', body: { username, email, password } });
-
-// ---- Películas (usuario y admin) ----
-export function proponerPelicula(datos) {
-  return request('/movies', { method: 'POST', body: datos, auth: true });
-}
-
-// Solo admin: todas las películas, con filtro opcional por estado
-export async function getPeliculasAdmin({ page = 1, limit = 10, status } = {}) {
-  const params = new URLSearchParams({ page, limit, sort: 'recientes' });
-  if (status) params.set('status', status);
-  const { data, pagination } = await request(`/movies?${params}`, { auth: true });
-  return { peliculas: await conNombres(data), paginacion: pagination };
-}
-
-// Solo admin: propuestas por revisar, las más viejas primero
-export async function getPendientes({ page = 1, limit = 10 } = {}) {
-  const { data, pagination } = await request(`/movies/pending?page=${page}&limit=${limit}`, { auth: true });
-  return { peliculas: await conNombres(data), paginacion: pagination };
-}
-
-export const editarPelicula = (id, datos) => request(`/movies/${id}`, { method: 'PUT', body: datos, auth: true });
-export const cambiarEstado = (id, status) => request(`/movies/${id}/status`, { method: 'PATCH', body: { status }, auth: true });
-export const borrarPelicula = (id) => request(`/movies/${id}`, { method: 'DELETE', auth: true });
-
-// ---- Categorías (solo admin) ----
-// Después de cambiarlas se descarta la copia guardada para que la lista se vuelva a pedir.
-async function cambiarCategoria(path, opciones) {
-  const respuesta = await request(path, { ...opciones, auth: true });
-  categoriasPendientes = null;
-  return respuesta;
-}
-export const crearCategoria = (name) => cambiarCategoria('/categories', { method: 'POST', body: { name } });
-export const editarCategoria = (id, name) => cambiarCategoria(`/categories/${id}`, { method: 'PUT', body: { name } });
-export const borrarCategoria = (id) => cambiarCategoria(`/categories/${id}`, { method: 'DELETE' });
+export const api = {
+  auth: new AuthApi(http),
+  categorias,
+  peliculas,
+  resenas: new ResenasApi(http),
+  lista: new ListaApi(http, peliculas),
+  usuarios: new UsuariosApi(http),
+};
