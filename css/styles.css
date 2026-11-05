@@ -277,3 +277,25 @@ body:has(dialog[open]) { overflow: hidden; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   .card:hover { transform: none; }
 }
+
+/* Examen - Buscador avanzado */
+.buscador-avanzado { padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+.buscador-avanzado h2 { margin-bottom: 1rem; }
+
+#formBuscar { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; align-items: center; }
+#formBuscar select, #formBuscar input { flex: 1 1 150px; background: var(--surface); color: var(--text); border: 1px solid var(--borde); border-radius: 6px; padding: .5rem .7rem; font: inherit; }
+#formBuscar select:focus, #formBuscar input:focus { outline: 2px solid var(--accent-claro); outline-offset: 1px; }
+#formBuscar input::placeholder { color: var(--muted); }
+
+#mensaje { color: var(--muted); margin-bottom: 1rem; }
+
+#resultados { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+.card-pelicula { background: var(--surface); border: 1px solid transparent; border-radius: var(--radius); padding: 1rem; display: grid; gap: .35rem; transition: transform .15s; }
+.card-pelicula:hover { transform: translateY(-4px); border-color: var(--violeta); box-shadow: 0 8px 24px rgba(141, 41, 238, .35); }
+.card-pelicula h3 { font-size: 1rem; }
+.card-pelicula p { color: var(--muted); font-size: .9rem; }
+.card-pelicula p:last-child { color: var(--estrella); font-weight: 700; }
+
+@media (max-width: 600px) {
+  .buscador-avanzado { padding-left: 1rem; padding-right: 1rem; }
+}

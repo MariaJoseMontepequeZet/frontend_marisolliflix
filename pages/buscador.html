@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador avanzado | MarisolliFlix</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <main>
+        <section class="buscador-avanzado">
+            <h2>Buscador avanzado</h2>
+            <form id="formBuscar">
+                <select id="categoria">
+                    <option value="">Todas las categorías</option>
+                </select>
+                <input type="number" id="minRating" placeholder="Rating mín" min="0" max="5" step="0.5">
+                <input type="number" id="maxRating" placeholder="Rating máx" min="0" max="5" step="0.5">
+                <input type="number" id="anioDesde" placeholder="Año desde" min="1888" max="2100">
+                <input type="number" id="anioHasta" placeholder="Año hasta" min="1888" max="2100">
+                <button type="submit" class="btn">Buscar</button>
+            </form>
+            <p id="mensaje"></p>
+            <div id="resultados"></div>
+        </section>
+    </main>
+    <script src="../js/pages/buscador.js"></script>
+</body>
+</html>
