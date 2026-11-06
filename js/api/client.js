@@ -111,6 +111,14 @@ class PeliculasApi {
     };
   }
 
+  // Buscador avanzado: devuelve [{ id, titulo, anio, categoria, calificacion }].
+  // filtros: categoria, minRating, maxRating (estrellas de 0 a 5), anioDesde y anioHasta
+  async buscar(filtros = {}) {
+    const params = new URLSearchParams(filtros);
+    const { data } = await this.#http.pedir(`/movies/search?${params}`);
+    return data;
+  }
+
   proponer(datos) {
     return this.#http.pedir('/movies', { method: 'POST', body: datos, auth: true });
   }
