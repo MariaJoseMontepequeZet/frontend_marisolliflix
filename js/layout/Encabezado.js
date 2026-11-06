@@ -14,6 +14,7 @@ export class Encabezado {
 
   iniciar() {
     this.#crearBuscador();
+    this.#crearEnlaceBuscadorAvanzado();
     this.#crearBotonMenu();
     this.#conectarSalir();
     this.#conectarCambioDeSesion();
@@ -55,6 +56,12 @@ export class Encabezado {
       <input id="buscar" name="q" type="search" placeholder="Buscar películas…" maxlength="100" autocomplete="off">`;
     buscador.querySelector('input').value = new URLSearchParams(location.search).get('q') ?? '';
     this.#header.insertBefore(buscador, this.#nav);
+  }
+
+  // Enlace al buscador avanzado, junto a "Películas"
+  #crearEnlaceBuscadorAvanzado() {
+    this.#nav.querySelector('a[href$="listado.html"]')
+      ?.insertAdjacentHTML('afterend', `<a href="${this.#base}buscador.html">Buscador</a>`);
   }
 
   // Botón de menú para pantallas angostas (el CSS lo muestra solo en móvil)
